@@ -1,17 +1,24 @@
-research_task:
+analizar_peticion_task:
   description: >
-    Conduct a thorough research about {topic}
-    Make sure you find any interesting and relevant information given
-    the current year is {current_year}.
+    Analiza la pregunta del usuario, que es: '{user_question}'.
+    Tu objetivo es interpretar esta pregunta, identificar qué reporte se está
+    solicitando y extraer cualquier parámetro relevante (como fechas, IDs, etc.).
+    Luego, selecciona y utiliza la herramienta más apropiada para cumplir con la solicitud.
   expected_output: >
-    A list with 10 bullet points of the most relevant information about {topic}
-  agent: researcher
+    La salida cruda y directa de la herramienta que utilizaste. Puede ser un
+    string en formato JSON con los datos del reporte, una lista de los reportes
+    disponibles, o un mensaje de error si la solicitud no pudo ser procesada.
+    No formatees ni alteres este resultado.
+  agent: analista_de_peticiones
 
-reporting_task:
+formular_respuesta_task:
   description: >
-    Review the context you got and expand each topic into a full section for a report.
-    Make sure the report is detailed and contains any and all relevant information.
+    Toma el contexto recibido de la tarea anterior (que es la salida cruda de una herramienta)
+    y transfórmalo en una respuesta final, clara y amigable para el usuario.
+    Si el contexto contiene datos JSON, preséntalos de manera legible.
+    Si es una lista de reportes, formatéala de forma ordenada.
+    Si es un error, explica el problema de manera cortés y ofrece ayuda.
   expected_output: >
-    A fully fledged report with the main topics, each with a full section of information.
-    Formatted as markdown without '```'
-  agent: reporting_analyst
+    Un único string de texto que sea la respuesta final y completa para ser
+    mostrada al usuario en el chat.
+  agent: formulador_de_respuestas
