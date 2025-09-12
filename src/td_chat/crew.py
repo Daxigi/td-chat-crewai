@@ -11,32 +11,17 @@ class TdChat():
     tasks: List[Task]
 
     @agent
-    def analista_de_peticiones(self) -> Agent:
+    def report_assistant(self) -> Agent:
         return Agent(
-            config=self.agents_config['analista_de_peticiones'], # type: ignore[index]
+            config=self.agents_config['report_assistant'], # type: ignore[index]
             verbose=True
-            # Aquí es donde añadirías las tools más adelante
             # tools=[mi_herramienta_1, mi_herramienta_2]
         )
 
-    @agent
-    def formulador_de_respuestas(self) -> Agent:
-        return Agent(
-            config=self.agents_config['formulador_de_respuestas'], # type: ignore[index]
-            verbose=True
-        )
-
     @task
-    def analizar_peticion_task(self) -> Task:
+    def process_request_task(self) -> Task:
         return Task(
-            config=self.tasks_config['analizar_peticion_task'], # type: ignore[index]
-        )
-
-    @task
-    def formular_respuesta_task(self) -> Task:
-        return Task(
-            config=self.tasks_config['formular_respuesta_task'], # type: ignore[index]
-            # Eliminamos output_file para obtener la respuesta como texto
+            config=self.tasks_config['process_request_task'] # type: ignore[index]
         )
 
     @crew
