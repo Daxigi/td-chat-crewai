@@ -1,14 +1,20 @@
+import os
+import mysql.connector
 from typing import Type
 from pydantic import BaseModel, Field
 from crewai.tools import BaseTool
-import sqlite3 # Placeholder import
+from dotenv import load_dotenv
 
-# Placeholder for database connection
-# You will need to replace this with your actual database connection logic
+load_dotenv()
+
 def get_db_connection():
-    # Example for sqlite3, replace with your DB connection
-    conn = sqlite3.connect('your_database.db')
-    return conn
+    return mysql.connector.connect(
+        host=os.getenv("DB_HOST"),
+        port=os.getenv("DB_PORT"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        database=os.getenv("DB_DATABASE")
+    )
 
 class EstadoUltimaSolicitudUsuarioInput(BaseModel):
     """Input for estado_ultima_solicitud_usuario tool."""
@@ -17,7 +23,7 @@ class EstadoUltimaSolicitudUsuarioInput(BaseModel):
 
 class EstadoUltimaSolicitudUsuarioTool(BaseTool):
     name: str = "estado_ultima_solicitud_usuario"
-    description: str = "Consulta el estado actual y la última acción realizada en la solicitud más reciente de un trámite específico para un usuario particular, identificado por su DNI."
+    description: str = "Consulta el estado de la última solicitud de un trámite para un usuario (DNI)."
     args_schema: Type[BaseModel] = EstadoUltimaSolicitudUsuarioInput
 
     def _run(self, dni_usuario: str, nombre_tramite: str) -> str:
@@ -49,26 +55,27 @@ class EstadoUltimaSolicitudUsuarioTool(BaseTool):
                 ) latest_ra ON ra1.request_id = latest_ra.request_id AND ra1.created_at = latest_ra.max_date
             ) ra ON ra.request_id = r.id
             LEFT JOIN actions a ON a.id = ra.action_id
-            WHERE u.dni = :dni_usuario
-              AND p.name = :nombre_tramite
+            WHERE u.dni = %(dni_usuario)s
+              AND p.name = %(nombre_tramite)s
               AND r.id = (
                   SELECT r2.id FROM requests r2
                   JOIN procedures p2 ON r2.procedure_id = p2.id
                   WHERE r2.user_id = u.id
-                    AND p2.name = :nombre_tramite
+                    AND p2.name = %(nombre_tramite)s
                   ORDER BY r2.created_at DESC
                   LIMIT 1
               )
               AND r.deleted_at IS NULL;
         """
-        # --- DATABASE LOGIC NEEDED HERE ---
-        # conn = get_db_connection()
-        # cursor = conn.cursor()
-        # cursor.execute(query, {'dni_usuario': dni_usuario, 'nombre_tramite': nombre_tramite})
-        # result = cursor.fetchall()
-        # conn.close()
-        # return str(result)
-        return "Database logic not implemented. Please configure the database connection in src/td_chat/tools/report_tools.py"
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(query, {'dni_usuario': dni_usuario, 'nombre_tramite': nombre_tramite})
+            result = cursor.fetchall()
+            conn.close()
+            return str(result)
+        except Exception as e:
+            return f"Error executing query: {e}"
 
 class ConteoEstadosTramiteEspecificoInput(BaseModel):
     """Input for conteo_estados_tramite_especifico tool."""
@@ -78,7 +85,7 @@ class ConteoEstadosTramiteEspecificoInput(BaseModel):
 
 class ConteoEstadosTramiteEspecificoTool(BaseTool):
     name: str = "conteo_estados_tramite_especifico"
-    description: str = "Entrega un resumen de la cantidad de solicitudes y sus estados finales para un tipo de trámite específico y dentro de un rango de fechas determinado."
+    description: str = "Cuenta las solicitudes y sus estados para un trámite y rango de fechas."
     args_schema: Type[BaseModel] = ConteoEstadosTramiteEspecificoInput
 
     def _run(self, nombre_tramite: str, fecha_inicio: str, fecha_fin: str) -> str:
@@ -90,8 +97,8 @@ class ConteoEstadosTramiteEspecificoTool(BaseTool):
                 JOIN procedures p ON r.procedure_id = p.id
                 JOIN request_state_records rsr ON rsr.request_id = r.id
                 JOIN request_states rs ON rsr.request_status_id = rs.id
-                WHERE p.name = :nombre_tramite
-                  AND r.start_date BETWEEN :fecha_inicio AND :fecha_fin
+                WHERE p.name = %(nombre_tramite)s
+                  AND r.start_date BETWEEN %(fecha_inicio)s AND %(fecha_fin)s
                   AND r.deleted_at IS NULL
             )
             SELECT tramite,
@@ -104,14 +111,15 @@ class ConteoEstadosTramiteEspecificoTool(BaseTool):
                    COUNT(*) AS total
             FROM ultimo_estado WHERE rn = 1 GROUP BY tramite ORDER BY tramite;
         """
-        # --- DATABASE LOGIC NEEDED HERE ---
-        # conn = get_db_connection()
-        # cursor = conn.cursor()
-        # cursor.execute(query, {'nombre_tramite': nombre_tramite, 'fecha_inicio': fecha_inicio, 'fecha_fin': fecha_fin})
-        # result = cursor.fetchall()
-        # conn.close()
-        # return str(result)
-        return "Database logic not implemented. Please configure the database connection in src/td_chat/tools/report_tools.py"
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(query, {'nombre_tramite': nombre_tramite, 'fecha_inicio': fecha_inicio, 'fecha_fin': fecha_fin})
+            result = cursor.fetchall()
+            conn.close()
+            return str(result)
+        except Exception as e:
+            return f"Error executing query: {e}"
 
 class SolicitudesPorEstadoInput(BaseModel):
     """Input for solicitudes_por_estado tool."""
@@ -120,7 +128,7 @@ class SolicitudesPorEstadoInput(BaseModel):
 
 class SolicitudesPorEstadoTool(BaseTool):
     name: str = "solicitudes_por_estado"
-    description: str = "Genera un resumen de la cantidad de solicitudes por estado final para CADA tipo de trámite, dentro de un rango de fechas específico."
+    description: str = "Cuenta las solicitudes y sus estados para todos los trámites en un rango de fechas."
     args_schema: Type[BaseModel] = SolicitudesPorEstadoInput
 
     def _run(self, fecha_inicio: str, fecha_fin: str) -> str:
@@ -132,7 +140,7 @@ class SolicitudesPorEstadoTool(BaseTool):
                 JOIN request_state_records rsr ON rsr.request_id = r.id
                 JOIN request_states rs ON rsr.request_status_id = rs.id
                 JOIN procedures p ON p.id = r.procedure_id
-                WHERE r.created_at BETWEEN :fecha_inicio AND :fecha_fin
+                WHERE r.created_at BETWEEN %(fecha_inicio)s AND %(fecha_fin)s
                   AND r.deleted_at IS NULL
             )
             SELECT tramite,
@@ -145,14 +153,15 @@ class SolicitudesPorEstadoTool(BaseTool):
                    COUNT(*) AS total
             FROM ultimo_estado WHERE rn = 1 GROUP BY tramite ORDER BY tramite;
         """
-        # --- DATABASE LOGIC NEEDED HERE ---
-        # conn = get_db_connection()
-        # cursor = conn.cursor()
-        # cursor.execute(query, {'fecha_inicio': fecha_inicio, 'fecha_fin': fecha_fin})
-        # result = cursor.fetchall()
-        # conn.close()
-        # return str(result)
-        return "Database logic not implemented. Please configure the database connection in src/td_chat/tools/report_tools.py"
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(query, {'fecha_inicio': fecha_inicio, 'fecha_fin': fecha_fin})
+            result = cursor.fetchall()
+            conn.close()
+            return str(result)
+        except Exception as e:
+            return f"Error executing query: {e}"
 
 class ListAvailableReportsInput(BaseModel):
     """Input for list_available_reports tool."""
@@ -160,13 +169,13 @@ class ListAvailableReportsInput(BaseModel):
 
 class ListAvailableReportsTool(BaseTool):
     name: str = "list_available_reports"
-    description: str = "Use this tool to get a list of the available reports that you can generate."
+    description: str = "Útil para cuando el usuario pregunta qué reportes, trámites o 'tramites' conoces o puedes hacer."
     args_schema: Type[BaseModel] = ListAvailableReportsInput
 
     def _run(self) -> str:
         return """
         Available reports:
-        1. estado_ultima_solicitud_usuario: Consulta el estado actual y la última acción realizada en la solicitud más reciente de un trámite específico para un usuario particular, identificado por su DNI.
-        2. conteo_estados_tramite_especifico: Entrega un resumen de la cantidad de solicitudes y sus estados finales para un tipo de trámite específico y dentro de un rango de fechas determinado.
-        3. solicitudes_por_estado: Genera un resumen de la cantidad de solicitudes por estado final para CADA tipo de trámite, dentro de un rango de fechas específico.
+        1. estado_ultima_solicitud_usuario: Consulta el estado de la última solicitud de un trámite para un usuario (DNI).
+        2. conteo_estados_tramite_especifico: Cuenta las solicitudes y sus estados para un trámite y rango de fechas.
+        3. solicitudes_por_estado: Cuenta las solicitudes y sus estados para todos los trámites en un rango de fechas.
         """
