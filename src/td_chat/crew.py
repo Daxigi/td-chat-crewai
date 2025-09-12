@@ -2,6 +2,12 @@ from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from typing import List
+from src.td_chat.tools.report_tools import (
+    EstadoUltimaSolicitudUsuarioTool,
+    ConteoEstadosTramiteEspecificoTool,
+    SolicitudesPorEstadoTool,
+    ListAvailableReportsTool
+)
 
 @CrewBase
 class TdChat():
@@ -14,8 +20,13 @@ class TdChat():
     def report_assistant(self) -> Agent:
         return Agent(
             config=self.agents_config['report_assistant'], # type: ignore[index]
+            tools=[
+                EstadoUltimaSolicitudUsuarioTool(),
+                ConteoEstadosTramiteEspecificoTool(),
+                SolicitudesPorEstadoTool(),
+                ListAvailableReportsTool()
+            ],
             verbose=True
-            # tools=[mi_herramienta_1, mi_herramienta_2]
         )
 
     @task
