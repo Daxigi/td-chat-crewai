@@ -10,12 +10,12 @@ dependencies = [
     "uvicorn[standard]>=0.29.0,<1.0.0"
 ]
 
-[project.scripts]
-td_chat = "td_chat.main:run"
-run_crew = "td_chat.main:run"
+[tool.poetry.scripts]
+run = "td_chat.main:run"
 train = "td_chat.main:train"
 replay = "td_chat.main:replay"
 test = "td_chat.main:test"
+serve = "uvicorn.main:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -35,6 +35,7 @@ packages = [{include = "td_chat", from = "src"}]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<=3.13" 
+python-dotenv = "^1.0.0"
 crewai = {extras = ["tools"], version = ">=0.177.0,<1.0.0"}
 fastapi = ">=0.111.0,<1.0.0"
 uvicorn = {extras = ["standard"], version = ">=0.29.0,<1.0.0"}

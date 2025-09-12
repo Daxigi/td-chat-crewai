@@ -13,17 +13,19 @@ warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 # Replace with inputs you want to test with, it will automatically
 # interpolate any tasks and agents information
 
-def run():
+def run(user_question: str):
     """
     Run the crew.
     """
     inputs = {
         'topic': 'AI LLMs',
-        'current_year': str(datetime.now().year)
+        'current_year': str(datetime.now().year),
+        'user_question': user_question
     }
     
     try:
-        TdChat().crew().kickoff(inputs=inputs)
+        result = TdChat().crew().kickoff(inputs=inputs)
+        return result
     except Exception as e:
         raise Exception(f"An error occurred while running the crew: {e}")
 
