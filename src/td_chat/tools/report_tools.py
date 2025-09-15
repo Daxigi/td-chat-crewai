@@ -179,3 +179,209 @@ class ListAvailableReportsTool(BaseTool):
         2. conteo_estados_tramite_especifico: Cuenta las solicitudes y sus estados para un trámite y rango de fechas.
         3. solicitudes_por_estado: Cuenta las solicitudes y sus estados para todos los trámites en un rango de fechas.
         """
+
+class ObtenerRolesUsuarioInput(BaseModel):
+    """Input para la herramienta ObtenerRolesUsuarioTool."""
+    dni_usuario: str = Field(..., description="el número de DNI del usuario a consultar")
+
+class ObtenerRolesUsuarioTool(BaseTool):
+    name: str = "obtener_roles_usuario"
+    description: str = "Obtiene los roles asociados a un usuario a través de su DNI."
+    args_schema: Type[BaseModel] = ObtenerRolesUsuarioInput
+
+    def _run(self, dni_usuario: str) -> str:
+        query = """
+            SELECT 
+                r.id AS rol_id, 
+                r.name AS rol
+            FROM users u
+            JOIN model_has_roles mhr 
+                ON mhr.model_id = u.id 
+               AND mhr.model_type = 'App\\Models\\User'
+            JOIN roles r 
+                ON r.id = mhr.role_id
+            WHERE u.dni = %(dni_usuario)s;
+        """
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(query, {'dni_usuario': dni_usuario})
+            result = cursor.fetchall()
+            conn.close()
+            
+            if not result:
+                return f"No se encontraron roles para el DNI: {dni_usuario}"
+                
+            roles = [row['rol'] for row in result]
+            return f"El usuario con DNI {dni_usuario} tiene los siguientes roles: {', '.join(roles)}"
+        except Exception as e:
+            return f"Error al ejecutar la consulta: {e}"
+
+class ListarAgentesTool(BaseTool):
+    name: str = "listar_agentes"
+    description: str = "Lista a todos los usuarios que tienen el rol de 'agente'."
+    args_schema: Type[BaseModel] = BaseModel
+
+    def _run(self) -> str:
+        query = """
+            SELECT 
+                u.name, 
+                u.dni
+            FROM users u
+            JOIN model_has_roles mhr 
+                ON u.id = mhr.model_id
+               AND mhr.model_type = 'App\\Models\\User'
+            WHERE mhr.role_id = 4;
+        """
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(query)
+            result = cursor.fetchall()
+            conn.close()
+            
+            if not result:
+                return "No se encontraron agentes en la base de datos."
+            
+            agentes_info = []
+            for row in result:
+                agentes_info.append(f"Nombre: {row['name']}, DNI: {row['dni']}")
+                
+            return "Agentes encontrados:\n" + "\n".join(agentes_info)
+        except Exception as e:
+            return f"Error al ejecutar la consulta: {e}"
+
+class ConsultarAtencionesAgenteInput(BaseModel):
+    """Input para la herramienta ConsultarAtencionesAgenteTool."""
+    dni_agente: str = Field(..., description="El número de DNI del agente a consultar")
+    fecha_inicio: str = Field(..., description="La fecha y hora de inicio del periodo a consultar, en formato 'YYYY-MM-DD HH:MM:SS'")
+    fecha_fin: str = Field(..., description="La fecha y hora de fin del periodo a consultar, en formato 'YYYY-MM-DD HH:MM:SS'")
+
+class ConsultarAtencionesAgenteTool(BaseTool):
+    name: str = "consultar_atenciones_agente"
+    description: str = "Consulta la cantidad de atenciones (cambios de estado) realizadas por un agente, por tipo de trámite y estado, en un periodo de tiempo específico. Utiliza el DNI del agente y un rango de fechas para el filtro."
+    args_schema: Type[BaseModel] = ConsultarAtencionesAgenteInput
+
+    def _run(self, dni_agente: str, fecha_inicio: str, fecha_fin: str) -> str:
+        query = """
+            SELECT
+              p.name AS nombre_tramite,
+              rs.description AS estado,
+              COUNT(*) AS total_cambios
+            FROM
+              request_state_records rsr
+            JOIN
+              users u ON rsr.user_id = u.id
+            JOIN
+              request_states rs ON rsr.request_status_id = rs.id
+            JOIN
+              requests r ON rsr.request_id = r.id
+            JOIN
+              procedures p ON r.procedure_id = p.id
+            WHERE
+              u.dni = %(dni_agente)s
+              AND rsr.created_at BETWEEN %(fecha_inicio)s AND %(fecha_fin)s
+              AND rsr.request_status_id NOT IN (0, 1, 2)
+            GROUP BY
+              p.name,
+              rs.description
+            ORDER BY
+              p.name,
+              COUNT(*) DESC;
+        """
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(query, {
+                'dni_agente': dni_agente,
+                'fecha_inicio': fecha_inicio,
+                'fecha_fin': fecha_fin
+            })
+            result = cursor.fetchall()
+            conn.close()
+
+            if not result:
+                return f"No se encontraron cambios de estado para el agente con DNI {dni_agente} entre {fecha_inicio} y {fecha_fin}."
+
+            output = f"Resumen de atenciones para el agente con DNI {dni_agente} entre {fecha_inicio} y {fecha_fin}:\n"
+            tramites_agrupados = {}
+            for row in result:
+                tramite = row['nombre_tramite']
+                estado = row['estado']
+                cantidad = row['total_cambios']
+
+                if tramite not in tramites_agrupados:
+                    tramites_agrupados[tramite] = []
+                tramites_agrupados[tramite].append(f"{estado}: {cantidad}")
+
+            for tramite, estados in tramites_agrupados.items():
+                output += f"- {tramite}: {', '.join(estados)}\n"
+
+            return output
+        except Exception as e:
+            return f"Error al ejecutar la consulta: {e}"
+
+    class ConsultarAtencionesAgentePorTramiteInput(BaseModel):
+    """Input para la herramienta ConsultarAtencionesAgentePorTramiteTool."""
+    dni_agente: str = Field(..., description="El número de DNI del agente a consultar")
+    nombre_tramite: str = Field(..., description="El nombre exacto del trámite a consultar")
+    fecha_inicio: str = Field(..., description="La fecha y hora de inicio del periodo a consultar, en formato 'YYYY-MM-DD HH:MM:SS'")
+    fecha_fin: str = Field(..., description="La fecha y hora de fin del periodo a consultar, en formato 'YYYY-MM-DD HH:MM:SS'")
+
+class ConsultarAtencionesAgentePorTramiteTool(BaseTool):
+    name: str = "consultar_atenciones_agente_por_tramite"
+    description: str = "Consulta la cantidad de atenciones (cambios de estado) realizadas por un agente, para un tipo de trámite específico y en un periodo de tiempo. Utiliza el DNI del agente, el nombre exacto del trámite y un rango de fechas para el filtro."
+    args_schema: Type[BaseModel] = ConsultarAtencionesAgentePorTramiteInput
+
+    def _run(self, dni_agente: str, nombre_tramite: str, fecha_inicio: str, fecha_fin: str) -> str:
+        query = """
+            SELECT
+              p.name AS nombre_tramite,
+              rs.description AS estado,
+              COUNT(*) AS total_cambios
+            FROM
+              request_state_records rsr
+            JOIN
+              users u ON rsr.user_id = u.id
+            JOIN
+              request_states rs ON rsr.request_status_id = rs.id
+            JOIN
+              requests r ON rsr.request_id = r.id
+            JOIN
+              procedures p ON r.procedure_id = p.id
+            WHERE
+              u.dni = %(dni_agente)s
+              AND rsr.created_at BETWEEN %(fecha_inicio)s AND %(fecha_fin)s
+              AND rsr.request_status_id NOT IN (0, 1, 2)
+              AND p.name = %(nombre_tramite)s
+            GROUP BY
+              p.name,
+              rs.description
+            ORDER BY
+              p.name,
+              COUNT(*) DESC;
+        """
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(query, {
+                'dni_agente': dni_agente,
+                'nombre_tramite': nombre_tramite,
+                'fecha_inicio': fecha_inicio,
+                'fecha_fin': fecha_fin
+            })
+            result = cursor.fetchall()
+            conn.close()
+
+            if not result:
+                return f"No se encontraron cambios de estado para el agente con DNI {dni_agente} para el trámite '{nombre_tramite}' entre {fecha_inicio} y {fecha_fin}."
+
+            output = f"Resumen de atenciones para el agente con DNI {dni_agente} en el trámite '{nombre_tramite}':\n"
+            for row in result:
+                estado = row['estado']
+                cantidad = row['total_cambios']
+                output += f"- {estado}: {cantidad} cambios de estado.\n"
+
+            return output
+        except Exception as e:
+            return f"Error al ejecutar la consulta: {e}"
