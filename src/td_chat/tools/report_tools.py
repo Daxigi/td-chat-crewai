@@ -236,12 +236,16 @@ class ObtenerRolesUsuarioTool(BaseTool):
             return f"Error al ejecutar la consulta en la herramienta: {e}"
 
 
-class ListarAgentesTool(BaseTool):
-    name: str = "listar_agentes"
-    description: str = "Lista a todos los usuarios que tienen el rol de 'agente'."
-    args_schema: Type[BaseModel] = BaseModel
+class ListarUsuariosPorRolInput(BaseModel):
+    """Input para la herramienta ListarUsuariosPorRolTool."""
+    nombre_rol: str = Field(..., description="el nombre exacto del rol a consultar")
 
-    def _run(self) -> str:
+class ListarUsuariosPorRolTool(BaseTool):
+    name: str = "listar_usuarios_por_rol"
+    description: str = "Lista a todos los usuarios que tienen un rol específico. Necesita el nombre exacto del rol a consultar."
+    args_schema: Type[BaseModel] = ListarUsuariosPorRolInput
+
+    def _run(self, nombre_rol: str) -> str:
         query = """
             SELECT 
                 u.name, 
@@ -250,23 +254,25 @@ class ListarAgentesTool(BaseTool):
             JOIN model_has_roles mhr 
                 ON u.id = mhr.model_id
                AND mhr.model_type = 'App\\Models\\User'
-            WHERE mhr.role_id = 4;
+            JOIN roles r
+                ON r.id = mhr.role_id
+            WHERE r.name = %(nombre_rol)s;
         """
         try:
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
-            cursor.execute(query)
+            cursor.execute(query, {'nombre_rol': nombre_rol})
             result = cursor.fetchall()
             conn.close()
             
             if not result:
-                return "No se encontraron agentes en la base de datos."
+                return f"No se encontraron usuarios con el rol '{nombre_rol}' en la base de datos."
             
-            agentes_info = []
+            usuarios_info = []
             for row in result:
-                agentes_info.append(f"Nombre: {row['name']}, DNI: {row['dni']}")
+                usuarios_info.append(f"Nombre: {row['name']}, DNI: {row['dni']}")
                 
-            return "Agentes encontrados:\n" + "\n".join(agentes_info)
+            return f"Usuarios encontrados con el rol '{nombre_rol}':\n" + "\n".join(usuarios_info)
         except Exception as e:
             return f"Error al ejecutar la consulta: {e}"
 
