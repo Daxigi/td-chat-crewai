@@ -6,7 +6,11 @@ from src.td_chat.tools.report_tools import (
     EstadoUltimaSolicitudUsuarioTool,
     ConteoEstadosTramiteEspecificoTool,
     SolicitudesPorEstadoTool,
-    ListAvailableReportsTool
+    ListAvailableReportsTool,
+    ObtenerRolesUsuarioTool,
+    ListarAgentesTool,
+    ConsultarAtencionesAgenteTool,
+    ConsultarAtencionesAgentePorTramiteTool
 )
 
 @CrewBase
@@ -24,7 +28,11 @@ class TdChat():
                 EstadoUltimaSolicitudUsuarioTool(),
                 ConteoEstadosTramiteEspecificoTool(),
                 SolicitudesPorEstadoTool(),
-                ListAvailableReportsTool()
+                ListAvailableReportsTool(),
+                ObtenerRolesUsuarioTool(),
+                ListarAgentesTool(),
+                ConsultarAtencionesAgenteTool(),
+                ConsultarAtencionesAgentePorTramiteTool()
             ],
             verbose=True
         )
