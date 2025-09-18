@@ -1,6 +1,8 @@
 # Use an official Python runtime as a parent image
 FROM python:3.12-slim
 
+ENV PYTHONPATH="${PYTHONPATH}:/app/src"
+
 # Set the working directory in the container
 WORKDIR /app
 

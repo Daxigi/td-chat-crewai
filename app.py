@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 from fastapi import FastAPI
-from src.td_chat.main import run  # Importa la función run
+from td_chat.main import run  # Importa la función run
 from dotenv import load_dotenv
 import time
 import threading
 import asyncio
-from src.td_chat.telegram_bot import main as run_telegram_bot
+from td_chat.telegram_bot import main as run_telegram_bot
 
 load_dotenv()
 

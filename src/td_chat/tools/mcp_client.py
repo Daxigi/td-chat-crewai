@@ -6,7 +6,7 @@ import os
 
 # --- Configuración del Cliente MCP ---
 # Es una buena práctica leer la URL del servidor desde variables de entorno
-MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://localhost:8000")
+MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://127.0.0.1:8765")
 
 def load_tools_from_mcp() -> List[BaseTool]:
     """
