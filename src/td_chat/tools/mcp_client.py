@@ -62,17 +62,21 @@ def load_tools_from_mcp() -> List[BaseTool]:
                     print(error_message)
                     return error_message
 
-        # --- CÓDIGO CORREGIDO ---
         # Crear una nueva clase de herramienta para cada herramienta remota
         ToolClass = type(
             tool_name,
             (BaseTool,),
             {
-                # Añadimos explícitamente las anotaciones de tipo que Pydantic ahora exige.
+                # Le decimos a Python a qué módulo pertenece esta clase
+                "__module__": __name__,
+
+                # Añadimos las anotaciones de tipo que Pydantic exige
                 "__annotations__": {
                     "name": str,
                     "description": str
                 },
+
+                # Asignamos los valores a los atributos
                 "name": tool_name,
                 "description": tool_description,
                 "args_schema": DynamicArgsSchema,
