@@ -2,16 +2,9 @@ from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from typing import List
-from src.td_chat.tools.report_tools import (
-    EstadoUltimaSolicitudUsuarioTool,
-    ConteoEstadosTramiteEspecificoTool,
-    SolicitudesPorEstadoTool,
-    ListAvailableReportsTool,
-    ObtenerRolesUsuarioTool,
-    ListarAgentesTool,
-    ConsultarAtencionesAgenteTool,
-    ConsultarAtencionesAgentePorTramiteTool
-)
+
+# Importamos la función para cargar herramientas desde el servidor MCP
+from src.td_chat.tools.mcp_client import load_tools_from_mcp
 
 @CrewBase
 class TdChat():
@@ -22,18 +15,11 @@ class TdChat():
 
     @agent
     def report_assistant(self) -> Agent:
+        # Cargamos las herramientas dinámicamente desde el servidor MCP
+        mcp_tools = load_tools_from_mcp()
         return Agent(
             config=self.agents_config['report_assistant'], # type: ignore[index]
-            tools=[
-                EstadoUltimaSolicitudUsuarioTool(),
-                ConteoEstadosTramiteEspecificoTool(),
-                SolicitudesPorEstadoTool(),
-                ListAvailableReportsTool(),
-                ObtenerRolesUsuarioTool(),
-                ListarAgentesTool(),
-                ConsultarAtencionesAgenteTool(),
-                ConsultarAtencionesAgentePorTramiteTool()
-            ],
+            tools=mcp_tools,
             verbose=True
         )
 
