@@ -20,7 +20,7 @@ class TdChat():
         return Agent(
             config=self.agents_config['report_assistant'], # type: ignore[index]
             tools=mcp_tools,
-            verbose=True,
+            verbose=False,
             allow_delegation=False  # <--- ¡Añade esta línea!
         )
 
@@ -37,5 +37,5 @@ class TdChat():
             agents=self.agents,
             tasks=self.tasks,
             process=Process.sequential,
-            verbose=True,
+            verbose=False,
         )
