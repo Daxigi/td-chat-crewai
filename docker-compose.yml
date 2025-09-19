@@ -4,6 +4,6 @@ services:
       - .env
     build: .
     ports:
-      - "8876:8876"
+      - "8765:8765"
     volumes:
       - .:/app
