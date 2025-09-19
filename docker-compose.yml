@@ -1,9 +1,17 @@
 services:
   app:
-    env_file:
-      - .env
     build: .
+    image: td-chat-crewai-app # Le damos un nombre a la imagen
+    container_name: td-chat # ¡Nombre fijo y crucial!
     ports:
-      - "8765:8765"
+      - "8765:8876" # Expone el puerto 8765 de tu VPS al 8876 del contenedor
     volumes:
       - .:/app
+    env_file:
+      - .env
+    networks: # ¡Sección añadida!
+      - shared-network
+
+networks: # ¡Sección añadida!
+  shared-network:
+    external: true
