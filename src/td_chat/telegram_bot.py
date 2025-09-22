@@ -4,63 +4,61 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 from dotenv import load_dotenv
 from src.td_chat.main import run as run_crew_agent
 import telegram.constants
-import re
 
+# Carga las variables de entorno desde el archivo .env
 load_dotenv()
 
+# Obtiene el token del bot de las variables de entorno
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
-
-def escape_markdown_v2(text: str) -> str:
-    """Helper function to escape characters in MarkdownV2."""
-    # List of characters to escape in MarkdownV2
-    # See https://core.telegram.org/bots/api#markdownv2-style
-    escape_chars = r'_*[]()~`>#+-=|{}.!'
-    return re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', text)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send a message when the command /start is issued."""
+    """Envía un mensaje de bienvenida cuando se ejecuta el comando /start."""
     user = update.effective_user
     await update.message.reply_html(
-        f"Hi {user.mention_html()}! I'm your CrewAI agent. Send me a message and I'll try to answer.",
+        f"¡Hola {user.mention_html()}! Soy tu agente de CrewAI. Envíame un mensaje y trataré de responder.",
     )
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Echo the user message."""
+    """Procesa el mensaje del usuario y devuelve la respuesta del agente."""
     user_message = update.message.text
-    print(f"Received message from {update.effective_user.full_name}: {user_message}")
-    
+    print(f"Mensaje recibido de {update.effective_user.full_name}: {user_message}")
+
     try:
-        # Run the CrewAI agent with the user's message
+        # Muestra un mensaje de "escribiendo..." para mejorar la experiencia del usuario
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=telegram.constants.ChatAction.TYPING)
+
+        # Ejecuta el agente de CrewAI con el mensaje del usuario
         agent_response = run_crew_agent(user_message)
-        # Escape special characters first
-        escaped_response = escape_markdown_v2(str(agent_response))
-        # Replace single newlines with two spaces and a newline for MarkdownV2 line breaks
-        formatted_response = escaped_response.replace('\n', '  \n')
-        await update.message.reply_text(formatted_response, parse_mode=telegram.constants.ParseMode.MARKDOWN_V2)
+
+        # Envía la respuesta usando el modo de formato MARKDOWN (versión 1).
+        # Este modo es más flexible y manejará correctamente las negritas y saltos de línea.
+        await update.message.reply_text(
+            text=str(agent_response),
+            parse_mode=telegram.constants.ParseMode.MARKDOWN
+        )
+
     except Exception as e:
-        # For error messages, escape them as well
-        error_message = f"An error occurred while processing your request: {e}"
-        await update.message.reply_text(escape_markdown_v2(error_message), parse_mode=telegram.constants.ParseMode.MARKDOWN_V2)
+        # Para mensajes de error, es mejor enviarlos como texto plano sin formato.
+        error_message = f"Ocurrió un error al procesar tu solicitud: {e}"
+        print(f"Error: {error_message}")
+        await update.message.reply_text(text=error_message)
 
 def main() -> None:
-    """Start the bot."""
+    """Inicia el bot de Telegram."""
     if not TELEGRAM_BOT_TOKEN:
-        print("TELEGRAM_BOT_TOKEN not found in environment variables.")
+        print("Error: La variable de entorno TELEGRAM_BOT_TOKEN no fue encontrada.")
         return
 
-    # Create the Application and pass it your bot's token.
+    # Crea la aplicación del bot con el token
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
-    # on different commands - answer in Telegram
+    # Asigna los manejadores de comandos y mensajes
     application.add_handler(CommandHandler("start", start))
-
-    # on non command i.e message - echo the message on Telegram
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
-    # Run the bot until the user presses Ctrl-C
-    print("Bot started. Press Ctrl-C to stop.")
-    application.run_polling(allowed_updates=Update.ALL_TYPES, stop_signals=False)
+    # Inicia el bot para que escuche nuevas actualizaciones
+    print("El bot se ha iniciado. Presiona Ctrl-C para detenerlo.")
+    application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
     main()
