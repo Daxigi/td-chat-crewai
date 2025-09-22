@@ -24,20 +24,27 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     print(f"Mensaje recibido de {update.effective_user.full_name}: {user_message}")
 
     try:
-        # Muestra un mensaje de "escribiendo..." para mejorar la experiencia del usuario
+        # Muestra un mensaje de "escribiendo..."
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=telegram.constants.ChatAction.TYPING)
 
-        # Ejecuta el agente de CrewAI con el mensaje del usuario
+        # Ejecuta el agente de CrewAI
         agent_response = run_crew_agent(user_message)
 
-        # Envía la respuesta usando el modo de formato HTML.
+        # --- CAPA DE SEGURIDAD ---
+        # Limpia la respuesta para que sea compatible con Telegram HTML
+        # Reemplaza <br> y <br/> por saltos de línea \n
+        clean_response = str(agent_response).replace('<br>', '\n').replace('<br/>', '\n')
+        # Reemplaza los espacios &nbsp; por espacios normales
+        clean_response = clean_response.replace('&nbsp;', ' ')
+
+        # Envía la respuesta limpia usando el modo de formato HTML
         await update.message.reply_text(
-            text=str(agent_response),
+            text=clean_response,
             parse_mode=telegram.constants.ParseMode.HTML
         )
 
     except Exception as e:
-        # Para mensajes de error, es mejor enviarlos como texto plano sin formato.
+        # Para mensajes de error, enviarlos como texto plano
         error_message = f"Ocurrió un error al procesar tu solicitud: {e}"
         print(f"Error: {error_message}")
         await update.message.reply_text(text=error_message)
@@ -48,14 +55,10 @@ def main() -> None:
         print("Error: La variable de entorno TELEGRAM_BOT_TOKEN no fue encontrada.")
         return
 
-    # Crea la aplicación del bot con el token
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
-
-    # Asigna los manejadores de comandos y mensajes
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
-    # Inicia el bot para que escuche nuevas actualizaciones.
     print("El bot se ha iniciado.")
     application.run_polling(allowed_updates=Update.ALL_TYPES, stop_signals=None)
 
