@@ -31,7 +31,6 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         agent_response = run_crew_agent(user_message)
 
         # Envía la respuesta usando el modo de formato MARKDOWN (versión 1).
-        # Este modo es más flexible y manejará correctamente las negritas y saltos de línea.
         await update.message.reply_text(
             text=str(agent_response),
             parse_mode=telegram.constants.ParseMode.MARKDOWN
@@ -56,9 +55,10 @@ def main() -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
-    # Inicia el bot para que escuche nuevas actualizaciones
-    print("El bot se ha iniciado. Presiona Ctrl-C para detenerlo.")
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+    # Inicia el bot para que escuche nuevas actualizaciones.
+    # Se añade stop_signals=None para evitar el error al correr en un hilo secundario.
+    print("El bot se ha iniciado.")
+    application.run_polling(allowed_updates=Update.ALL_TYPES, stop_signals=None)
 
 if __name__ == "__main__":
     main()
