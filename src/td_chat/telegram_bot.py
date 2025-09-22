@@ -30,10 +30,10 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         # Ejecuta el agente de CrewAI con el mensaje del usuario
         agent_response = run_crew_agent(user_message)
 
-        # Envía la respuesta usando el modo de formato MARKDOWN (versión 1).
+        # Envía la respuesta usando el modo de formato HTML.
         await update.message.reply_text(
             text=str(agent_response),
-            parse_mode=telegram.constants.ParseMode.MARKDOWN
+            parse_mode=telegram.constants.ParseMode.HTML
         )
 
     except Exception as e:
@@ -56,7 +56,6 @@ def main() -> None:
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
     # Inicia el bot para que escuche nuevas actualizaciones.
-    # Se añade stop_signals=None para evitar el error al correr en un hilo secundario.
     print("El bot se ha iniciado.")
     application.run_polling(allowed_updates=Update.ALL_TYPES, stop_signals=None)
 
