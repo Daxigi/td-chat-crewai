@@ -1,6 +1,10 @@
 process_request_task:
   description: >
     Analiza la pregunta del usuario: '{user_question}'.
+    Utiliza el siguiente historial de chat como contexto para entender mejor la solicitud:
+    <context>
+    {chat_history}
+    </context>    
     1. Interpreta la pregunta para identificar el reporte solicitado y sus parámetros (fechas, IDs, etc.).
     2. Selecciona y utiliza la herramienta apropiada para obtener los datos.
     3. Formula una respuesta amigable para el usuario. Si obtuviste datos, preséntalos de forma legible.

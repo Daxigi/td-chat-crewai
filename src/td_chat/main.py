@@ -13,14 +13,15 @@ warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 # Replace with inputs you want to test with, it will automatically
 # interpolate any tasks and agents information
 
-def run(user_question: str):
+def run(user_question: str, chat_history: str):
     """
     Run the crew.
     """
     inputs = {
         'topic': 'AI LLMs',
         'current_year': str(datetime.now().year),
-        'user_question': user_question
+        'user_question': user_question,
+        'chat_history': chat_history
     }
     
     try:
