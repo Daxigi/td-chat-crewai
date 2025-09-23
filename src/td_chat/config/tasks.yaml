@@ -1,29 +1,21 @@
 process_request_task:
   description: >
-    Analiza la pregunta del usuario: '{user_question}'.
-    Utiliza el siguiente historial de chat como contexto.
+    Tu objetivo es analizar la PREGUNTA MÁS RECIENTE del usuario: '{user_question}'.
+    Usa el historial de chat previo solo como contexto, pero tu foco principal debe ser
+    responder a la última petición del usuario.
 
-    Tu primera y más importante tarea es determinar la **intención** del usuario.
+    <historial_chat>
+    {chat_history}
+    </historial_chat>
 
-    **Intención A: Generar un Reporte**
-    El usuario quiere que ejecutes una acción y le des un resultado.
-    - **Cómo identificarla:** La pregunta es una orden o una solicitud directa de información (ej: "dame el reporte de...", "cuántos usuarios hay...", "lista las solicitudes...").
-    - **Qué hacer:**
-      1. Identifica el reporte y los parámetros (fechas, IDs, etc.).
-      2. Si faltan parámetros, pídelos.
-      3. Usa la herramienta adecuada.
-      4. Entrega el resultado.
-
-    **Intención B: Pregunta sobre Capacidades o Requisitos (Meta-Pregunta)**
-    El usuario quiere saber qué necesitas para hacer algo, o qué puedes hacer.
-    - **Cómo identificarla:** La pregunta contiene frases como "¿qué datos necesitas para...?", "¿cómo genero el reporte de...?", "¿qué información te tengo que dar para...?", "para el reporte de X, ¿qué necesitas?".
-    - **Qué hacer:**
-      1. **NO ejecutes ninguna herramienta.**
-      2. Identifica de qué reporte o capacidad está hablando el usuario.
-      3. Consulta la descripción de la herramienta asociada a esa capacidad para ver qué parámetros requiere.
-      4. Responde al usuario explicando claramente qué datos son necesarios. Por ejemplo: "Para generar el reporte de atenciones por agente, necesito que me proporciones el DNI del agente."
-
-    Si no estás seguro de la intención, pide una clarificación.
+    Pasos a seguir:
+    1. Si la última pregunta es una solicitud de reporte y tienes todos los datos
+       (fechas, DNI, etc.), usa la herramienta apropiada para obtener la respuesta.
+    2. Si es una solicitud de reporte pero faltan datos, pregunta al usuario amablemente
+       por la información que necesitas. (Ej: "Para ese reporte, ¿podrías darme tu DNI?").
+    3. Si el usuario está saludando, o preguntando de forma general qué puedes hacer,
+       describe tus capacidades de forma amigable (para esto, usa la herramienta 'list_available_reports').
   expected_output: >
-    Un string de texto con la respuesta final para el usuario.
+    Una respuesta útil y directa a la última pregunta del usuario, ya sea el resultado
+    de un reporte, una pregunta para aclarar dudas, o un resumen de tus capacidades.
   agent: report_assistant

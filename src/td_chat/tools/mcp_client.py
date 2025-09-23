@@ -4,24 +4,14 @@ from crewai.tools import BaseTool
 from pydantic import BaseModel, Field, create_model
 import os
 
-# --- Cache para las herramientas ---
-_tool_cache: List[BaseTool] | None = None
-
 # --- Configuración del Cliente MCP ---
-# Es una buena práctica leer la URL del servidor desde variables de entorno
 MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://127.0.0.1:8765")
 
 def load_tools_from_mcp() -> List[BaseTool]:
     """
     Carga dinámicamente las herramientas desde un servidor MCP y las convierte
-    en herramientas compatibles con CrewAI. Utiliza un caché para evitar
-    recargar las herramientas en cada llamada.
+    en herramientas compatibles con CrewAI.
     """
-    global _tool_cache
-    if _tool_cache is not None:
-        print("Cargando herramientas desde el caché.")
-        return _tool_cache
-
     print(f"Cargando herramientas desde el servidor MCP en: {MCP_SERVER_URL}")
     try:
         # 1. Obtener la lista de herramientas del servidor MCP
@@ -40,22 +30,18 @@ def load_tools_from_mcp() -> List[BaseTool]:
             args_fields = {}
             if 'properties' in tool_schema.get('args_schema', {}):
                 for prop_name, prop_details in tool_schema['args_schema']['properties'].items():
-                    # Mapeo simple de tipos de JSON Schema a Python.
-                    # Se puede extender si usas tipos más complejos (int, bool, etc.)
                     field_type = str
                     args_fields[prop_name] = (field_type, Field(..., description=prop_details.get('description')))
 
             DynamicArgsSchema = create_model(f"{tool_name}Input", **args_fields)
 
-            # --- Función de ejecución para la herramienta dinámica ---
-            # Esta función será el corazón de nuestra herramienta dinámica.
-            # Sabe cómo llamar al servidor MCP para ejecutar la herramienta real.
+            # Función de ejecución para la herramienta dinámica
             def _run_mcp_tool(self, **kwargs) -> str:
                 tool_to_run = self.name
                 print(f"Ejecutando herramienta remota '{tool_to_run}' con argumentos: {kwargs}")
                 try:
                     exec_response = requests.post(
-                                                f"{MCP_SERVER_URL}/tools/execute",
+                        f"{MCP_SERVER_URL}/tools/execute",
                         json={"tool_name": tool_to_run, "args": kwargs}
                     )
                     exec_response.raise_for_status()
@@ -71,17 +57,12 @@ def load_tools_from_mcp() -> List[BaseTool]:
                 tool_name,
                 (BaseTool,),
                 {
-                    # Le decimos a Python a qué módulo pertenece esta clase
                     "__module__": __name__,
-
-                    # Añadimos TODAS las anotaciones de tipo que Pydantic ahora exige
                     "__annotations__": {
                         "name": str,
                         "description": str,
-                        "args_schema": Type[BaseModel] # <--- ¡ESTA ES LA LÍNEA QUE FALTABA!
+                        "args_schema": Type[BaseModel]
                     },
-
-                    # Asignamos los valores a los atributos
                     "name": tool_name,
                     "description": tool_description,
                     "args_schema": DynamicArgsSchema,
@@ -90,8 +71,6 @@ def load_tools_from_mcp() -> List[BaseTool]:
             )
             crewai_tools.append(ToolClass())
 
-        # Guardar en caché para futuras llamadas
-        _tool_cache = crewai_tools
         return crewai_tools
 
     except requests.exceptions.RequestException as e:
