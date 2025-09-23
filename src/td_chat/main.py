@@ -11,8 +11,8 @@ def run(user_question: str, chat_history: str):
     }
     
     try:
-        # Instancia la clase de la Crew y llama al método crew() para obtener el objeto Crew
-        # Luego ejecuta el kickoff
+        # Instancia la clase de la Crew, llama al método crew() para obtener el objeto Crew,
+        # y luego ejecuta el kickoff.
         result = TdChatCrew().crew().kickoff(inputs=inputs)
         return result
     except Exception as e:
