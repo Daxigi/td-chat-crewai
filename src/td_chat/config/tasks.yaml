@@ -1,26 +1,39 @@
-process_request_task:
+# ----------------------------------------------------
+# Tarea 1: La de Enrutamiento
+# Asignada al agente router.
+# ----------------------------------------------------
+routing_task:
   description: >
-    Tu objetivo es analizar la PREGUNTA MÁS RECIENTE del usuario: '{user_question}'.
-    Usa el historial de chat previo solo como contexto, pero tu foco principal debe ser
-    responder a la última petición del usuario.
+    Analiza la pregunta más reciente del usuario: '{user_question}' y el historial de chat.
 
     <historial_chat>
     {chat_history}
     </historial_chat>
 
-    Pasos a seguir:
-    1. Si la última pregunta es una solicitud de reporte y tienes todos los datos
-       (fechas, DNI, etc.), usa la herramienta apropiada para obtener la respuesta.
-    2. Si es una solicitud de reporte pero faltan datos, pregunta al usuario amablemente
-       por la información que necesitas. (Ej: "Para ese reporte, ¿podrías darme tu DNI?").
-    3. Si el usuario está saludando, o preguntando de forma general qué puedes hacer,
-       describe tus capacidades de forma amigable (para esto, usa la herramienta 'list_available_reports').
-  
+    Determina la intención y delega la tarea al 'report_assistant' con un contexto claro.
+    Por ejemplo:
+    - Si el usuario pide un reporte, tu nota debe ser:
+      "El usuario quiere el reporte de X con estos parámetros. Ejecuta la herramienta necesaria y devuelve el resultado COMPLETO."
+    - Si el usuario saluda o pregunta qué puedes hacer, la nota debe ser:
+      "El usuario está preguntando por tus capacidades. Usa la herramienta 'list_available_reports' y explica lo que puedes hacer de forma amigable."
+  expected_output: >
+    Una instrucción clara y concisa para el 'report_assistant', indicándole
+    exactamente qué herramienta usar o qué pregunta hacer a continuación.
+  agent: request_router_agent
+
+# ----------------------------------------------------
+# Tarea 2: La de Ejecución
+# Asignada al agente asistente. Recibe el resultado de la Tarea 1.
+# ----------------------------------------------------
+process_request_task:
+  description: >
+    Tu compañero, el 'request_router_agent', ha analizado la petición y
+    te ha pasado esta instrucción. Tu único trabajo es ejecutarla al pie de la letra.
+    Usa tus herramientas para cumplir la instrucción.
   expected_output: >
     La respuesta COMPLETA y SIN RECORTAR a la pregunta del usuario.
-    Si el resultado es una lista de datos (como un reporte), DEBES incluir
-    TODOS los elementos de la lista, sin importar qué tan larga sea.
-    NO RESUMAS la salida. NO uses frases como "y así sucesivamente".
-    Debes entregar el reporte completo, de principio a fin.
-  
+    Si el resultado es un reporte, DEBES incluir TODOS los elementos de la lista,
+    sin importar qué tan larga sea. NO RESUMAS la salida.
   agent: report_assistant
+  context:
+    - routing_task

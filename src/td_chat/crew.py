@@ -1,51 +1,66 @@
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
-from crewai.agents.agent_builder.base_agent import BaseAgent
-from typing import List
-from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
 import os
 
-# Importamos la función para cargar herramientas desde el servidor MCP
-from src.td_chat.tools.mcp_client import load_tools_from_mcp
+# --- IMPORTACIÓN CORRECTA ---
+# Importamos la función que carga las herramientas desde tu servidor MCP
+# Asegúrate de que tu archivo mcp_client.py esté en la ruta: src/td_chat/tools/mcp_client.py
+from .tools.mcp_client import load_tools_from_mcp
 
 @CrewBase
-class TdChat():
+class TdChatCrew():
     """TdChat crew"""
-
-    agents: List[BaseAgent]
-    tasks: List[Task]
+    agents_config = 'config/agents.yaml'
+    tasks_config = 'config/tasks.yaml'
 
     def __init__(self):
-        self.openai_llm = ChatOpenAI(
-            model="gpt-3.5-turbo",
-            api_key=os.getenv("OPENAI_API_KEY")
+        # Define el LLM una sola vez para reutilizarlo en los agentes
+        self.groq_llm = ChatGroq(
+            api_key=os.environ.get("GROQ_API_KEY"),
+            model_name="llama-3.1-8b-instant"
+        )
+        # --- CARGA DINÁMICA DE HERRAMIENTAS ---
+        # Llama a tu función para obtener las herramientas desde el servidor
+        self.mcp_tools = load_tools_from_mcp()
+
+    @agent
+    def request_router_agent(self) -> Agent:
+        return Agent(
+            config=self.agents_config['request_router_agent'],
+            llm=self.groq_llm
+            # Este agente no necesita herramientas
         )
 
     @agent
     def report_assistant(self) -> Agent:
-        # Cargamos las herramientas dinámicamente desde el servidor MCP
-        mcp_tools = load_tools_from_mcp()
         return Agent(
-            config=self.agents_config['report_assistant'], # type: ignore[index]
-            tools=mcp_tools,
-            verbose=True,
-            allow_delegation=False,
-            llm=self.openai_llm
+            config=self.agents_config['report_assistant'],
+            tools=self.mcp_tools, # Asigna las herramientas cargadas desde el MCP
+            llm=self.groq_llm
+        )
+
+    @task
+    def routing_task(self) -> Task:
+        return Task(
+            config=self.tasks_config['routing_task'],
+            agent=self.request_router_agent()
         )
 
     @task
     def process_request_task(self) -> Task:
         return Task(
-            config=self.tasks_config['process_request_task'] # type: ignore[index]
+            config=self.tasks_config['process_request_task'],
+            agent=self.report_assistant()
         )
 
     @crew
     def crew(self) -> Crew:
-        """Creates the TdChat crew"""
+        """Crea y configura la Crew con un proceso secuencial."""
         return Crew(
-            agents=self.agents,
-            tasks=self.tasks,
+            agents=[self.request_router_agent(), self.report_assistant()],
+            tasks=[self.routing_task(), self.process_request_task()],
             process=Process.sequential,
-            verbose=False,
             memory=True,
+            verbose=2
         )
