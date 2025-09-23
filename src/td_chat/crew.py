@@ -3,9 +3,7 @@ from crewai.project import CrewBase, agent, crew, task
 from langchain_groq import ChatGroq
 import os
 
-# --- IMPORTACIÓN CORRECTA ---
-# Importamos la función que carga las herramientas desde tu servidor MCP
-# Asegúrate de que tu archivo mcp_client.py esté en la ruta: src/td_chat/tools/mcp_client.py
+# Asegúrate de que la ruta a tu cliente MCP sea correcta
 from .tools.mcp_client import load_tools_from_mcp
 
 @CrewBase
@@ -15,13 +13,12 @@ class TdChatCrew():
     tasks_config = 'config/tasks.yaml'
 
     def __init__(self):
-        # Define el LLM una sola vez para reutilizarlo en los agentes
+        # Define el LLM una sola vez para reutilizarlo
         self.groq_llm = ChatGroq(
             api_key=os.environ.get("GROQ_API_KEY"),
             model_name="llama-3.1-8b-instant"
         )
-        # --- CARGA DINÁMICA DE HERRAMIENTAS ---
-        # Llama a tu función para obtener las herramientas desde el servidor
+        # Carga las herramientas desde el servidor MCP
         self.mcp_tools = load_tools_from_mcp()
 
     @agent
@@ -29,14 +26,13 @@ class TdChatCrew():
         return Agent(
             config=self.agents_config['request_router_agent'],
             llm=self.groq_llm
-            # Este agente no necesita herramientas
         )
 
     @agent
     def report_assistant(self) -> Agent:
         return Agent(
             config=self.agents_config['report_assistant'],
-            tools=self.mcp_tools, # Asigna las herramientas cargadas desde el MCP
+            tools=self.mcp_tools,
             llm=self.groq_llm
         )
 
@@ -62,5 +58,7 @@ class TdChatCrew():
             tasks=[self.routing_task(), self.process_request_task()],
             process=Process.sequential,
             memory=True,
-            verbose=2
+            # --- CORRECCIÓN AQUÍ ---
+            # Cambiado de 'verbose=2' a 'verbose=True'
+            verbose=True
         )
