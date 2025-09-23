@@ -4,11 +4,21 @@ process_request_task:
     Utiliza el siguiente historial de chat como contexto para entender mejor la solicitud:
     <context>
     {chat_history}
-    </context>    
-    1. Interpreta la pregunta para identificar el reporte solicitado y sus parámetros (fechas, IDs, etc.).
-    2. Selecciona y utiliza la herramienta apropiada para obtener los datos.
-    3. Formula una respuesta amigable para el usuario. Si obtuviste datos, preséntalos de forma legible.
-       Si la solicitud es ambigua, pide una clarificación cortésmente.
+    </context>
+
+    Tu tarea principal es decidir la **intención** del usuario:
+    A. ¿El usuario está pidiendo que generes un reporte? Si es así:
+       1. Identifica el reporte y los parámetros necesarios (fechas, IDs, etc.) a partir de la pregunta y el historial.
+       2. Si faltan parámetros, pídelos amablemente.
+       3. Una vez que tengas todo, selecciona y utiliza la herramienta apropiada para obtener los datos.
+       4. Formula una respuesta amigable con los resultados.
+
+    B. ¿El usuario está preguntando qué información necesitas para un reporte (una "meta-pregunta")? Si es así:
+       1. NO ejecutes ninguna herramienta.
+       2. En su lugar, consulta la descripción de la herramienta correspondiente para identificar los parámetros que necesita.
+       3. Informa al usuario de manera clara y concisa qué datos son necesarios para ese reporte específico.
+
+    Si la solicitud es ambigua, pide una clarificación cortésmente.
   expected_output: >
     Un string de texto con la respuesta final para el usuario.
   agent: report_assistant
