@@ -18,7 +18,7 @@ class TdChat():
     def __init__(self):
         self.groq_llm = ChatGroq(
             api_key=os.getenv("GROQ_API_KEY"),
-            model="llama3-70b-8192"
+            model="groq/llama3-70b-8192"
         )
 
     @agent
