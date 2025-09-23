@@ -1,24 +1,29 @@
 process_request_task:
   description: >
     Analiza la pregunta del usuario: '{user_question}'.
-    Utiliza el siguiente historial de chat como contexto para entender mejor la solicitud:
-    <context>
-    {chat_history}
-    </context>
+    Utiliza el siguiente historial de chat como contexto.
 
-    Tu tarea principal es decidir la **intención** del usuario:
-    A. ¿El usuario está pidiendo que generes un reporte? Si es así:
-       1. Identifica el reporte y los parámetros necesarios (fechas, IDs, etc.) a partir de la pregunta y el historial.
-       2. Si faltan parámetros, pídelos amablemente.
-       3. Una vez que tengas todo, selecciona y utiliza la herramienta apropiada para obtener los datos.
-       4. Formula una respuesta amigable con los resultados.
+    Tu primera y más importante tarea es determinar la **intención** del usuario.
 
-    B. ¿El usuario está preguntando qué información necesitas para un reporte (una "meta-pregunta")? Si es así:
-       1. NO ejecutes ninguna herramienta.
-       2. En su lugar, consulta la descripción de la herramienta correspondiente para identificar los parámetros que necesita.
-       3. Informa al usuario de manera clara y concisa qué datos son necesarios para ese reporte específico.
+    **Intención A: Generar un Reporte**
+    El usuario quiere que ejecutes una acción y le des un resultado.
+    - **Cómo identificarla:** La pregunta es una orden o una solicitud directa de información (ej: "dame el reporte de...", "cuántos usuarios hay...", "lista las solicitudes...").
+    - **Qué hacer:**
+      1. Identifica el reporte y los parámetros (fechas, IDs, etc.).
+      2. Si faltan parámetros, pídelos.
+      3. Usa la herramienta adecuada.
+      4. Entrega el resultado.
 
-    Si la solicitud es ambigua, pide una clarificación cortésmente.
+    **Intención B: Pregunta sobre Capacidades o Requisitos (Meta-Pregunta)**
+    El usuario quiere saber qué necesitas para hacer algo, o qué puedes hacer.
+    - **Cómo identificarla:** La pregunta contiene frases como "¿qué datos necesitas para...?", "¿cómo genero el reporte de...?", "¿qué información te tengo que dar para...?", "para el reporte de X, ¿qué necesitas?".
+    - **Qué hacer:**
+      1. **NO ejecutes ninguna herramienta.**
+      2. Identifica de qué reporte o capacidad está hablando el usuario.
+      3. Consulta la descripción de la herramienta asociada a esa capacidad para ver qué parámetros requiere.
+      4. Responde al usuario explicando claramente qué datos son necesarios. Por ejemplo: "Para generar el reporte de atenciones por agente, necesito que me proporciones el DNI del agente."
+
+    Si no estás seguro de la intención, pide una clarificación.
   expected_output: >
     Un string de texto con la respuesta final para el usuario.
   agent: report_assistant
