@@ -2,7 +2,7 @@ from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from typing import List
-from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
 import os
 
 # Importamos la función para cargar herramientas desde el servidor MCP
@@ -16,9 +16,9 @@ class TdChat():
     tasks: List[Task]
 
     def __init__(self):
-        self.groq_llm = ChatGroq(
-            api_key=os.getenv("GROQ_API_KEY"),
-            model="groq/gemma-7b-it"
+        self.openai_llm = ChatOpenAI(
+            model="gpt-3.5-turbo",
+            api_key=os.getenv("OPENAI_API_KEY")
         )
 
     @agent
@@ -30,7 +30,7 @@ class TdChat():
             tools=mcp_tools,
             verbose=True,
             allow_delegation=False,
-            llm=self.groq_llm
+            llm=self.openai_llm
         )
 
     @task
