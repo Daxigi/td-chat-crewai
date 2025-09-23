@@ -188,7 +188,6 @@ stagehand==0.5.0
 starlette==0.47.3
 sympy==1.14.0
 tabulate==0.9.0
--e git+https://github.com/Daxigi/td-chat-crewai.git@bc14f7738a360050bfb40a76b88eaafe4715c292#egg=td_chat
 tenacity==9.1.2
 tiktoken==0.11.0
 tokenizers==0.20.3

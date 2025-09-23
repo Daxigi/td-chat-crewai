@@ -6,6 +6,9 @@ ENV PYTHONPATH="${PYTHONPATH}:/app/src"
 # Set the working directory in the container
 WORKDIR /app
 
+# Install git
+RUN apt-get update && apt-get install -y git
+
 # Copy the requirements file and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
