@@ -2,6 +2,8 @@ from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from typing import List
+from langchain_groq import ChatGroq
+import os
 
 # Importamos la función para cargar herramientas desde el servidor MCP
 from src.td_chat.tools.mcp_client import load_tools_from_mcp
@@ -13,6 +15,12 @@ class TdChat():
     agents: List[BaseAgent]
     tasks: List[Task]
 
+    def __init__(self):
+        self.groq_llm = ChatGroq(
+            api_key=os.getenv("GROQ_API_KEY"),
+            model="llama3-70b-8192"
+        )
+
     @agent
     def report_assistant(self) -> Agent:
         # Cargamos las herramientas dinámicamente desde el servidor MCP
@@ -21,7 +29,8 @@ class TdChat():
             config=self.agents_config['report_assistant'], # type: ignore[index]
             tools=mcp_tools,
             verbose=True,
-            allow_delegation=False  # <--- ¡Añade esta línea!
+            allow_delegation=False,
+            llm=self.groq_llm
         )
 
     @task
@@ -38,5 +47,6 @@ class TdChat():
             tasks=self.tasks,
             process=Process.sequential,
             verbose=False,
-            memory=True
+            memory=True,
+            cache=True
         )

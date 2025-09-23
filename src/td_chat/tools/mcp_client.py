@@ -4,6 +4,9 @@ from crewai.tools import BaseTool
 from pydantic import BaseModel, Field, create_model
 import os
 
+# --- Cache para las herramientas ---
+_tool_cache: List[BaseTool] | None = None
+
 # --- Configuración del Cliente MCP ---
 # Es una buena práctica leer la URL del servidor desde variables de entorno
 MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://127.0.0.1:8765")
@@ -11,12 +14,14 @@ MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://127.0.0.1:8765")
 def load_tools_from_mcp() -> List[BaseTool]:
     """
     Carga dinámicamente las herramientas desde un servidor MCP y las convierte
-    en herramientas compatibles con CrewAI.
-
-    Esta función se conecta al endpoint /tools del servidor MCP, obtiene la
-    definición de cada herramienta y crea una clase de herramienta de CrewAI
-    dinámicamente que sabe cómo ejecutar la herramienta remota.
+    en herramientas compatibles con CrewAI. Utiliza un caché para evitar
+    recargar las herramientas en cada llamada.
     """
+    global _tool_cache
+    if _tool_cache is not None:
+        print("Cargando herramientas desde el caché.")
+        return _tool_cache
+
     print(f"Cargando herramientas desde el servidor MCP en: {MCP_SERVER_URL}")
     try:
         # 1. Obtener la lista de herramientas del servidor MCP
@@ -85,6 +90,8 @@ def load_tools_from_mcp() -> List[BaseTool]:
             )
             crewai_tools.append(ToolClass())
 
+        # Guardar en caché para futuras llamadas
+        _tool_cache = crewai_tools
         return crewai_tools
 
     except requests.exceptions.RequestException as e:
