@@ -1547,6 +1547,29 @@ docs = ["Sphinx", "furo"]
 test = ["objgraph", "psutil", "setuptools"]
 
 [[package]]
+name = "groq"
+version = "0.31.1"
+description = "The official Python library for the groq API"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "groq-0.31.1-py3-none-any.whl", hash = "sha256:536bd5dd6267dea5b3710e41094c0479748da2d155b9e073650e94b7fb2d71e8"},
+    {file = "groq-0.31.1.tar.gz", hash = "sha256:4d611e0100cb22732c43b53af37933a1b8a5c5a18fa96132fee14e6c15d737e6"},
+]
+
+[package.dependencies]
+anyio = ">=3.5.0,<5"
+distro = ">=1.7.0,<2"
+httpx = ">=0.23.0,<1"
+pydantic = ">=1.9.0,<3"
+sniffio = "*"
+typing-extensions = ">=4.10,<5"
+
+[package.extras]
+aiohttp = ["aiohttp", "httpx-aiohttp (>=0.1.8)"]
+
+[[package]]
 name = "grpcio"
 version = "1.74.0"
 description = "HTTP/2-based RPC framework"
@@ -2487,6 +2510,22 @@ files = [
 [package.dependencies]
 langchain-community = ">=0.3.0,<0.4.0"
 langchain-core = ">=0.3.28,<0.4.0"
+
+[[package]]
+name = "langchain-groq"
+version = "0.3.8"
+description = "An integration package connecting Groq and LangChain"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "langchain_groq-0.3.8-py3-none-any.whl", hash = "sha256:d7ef98c23f1f4fc9e9e21cddd4e155f3dc989fbe1ff6fefeb52c49c870876219"},
+    {file = "langchain_groq-0.3.8.tar.gz", hash = "sha256:468d1045f9ca9815f55976535dd082a8d08a21068458f0efe0bb364a1a460779"},
+]
+
+[package.dependencies]
+groq = ">=0.30.0,<1"
+langchain-core = ">=0.3.75,<1.0.0"
 
 [[package]]
 name = "langchain-openai"
@@ -6499,4 +6538,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "~3.12"
-content-hash = "50a3e5f865e65fb45b45a579a1ffb040d58ce2974dc9f70ed97d3da56cdc9ff0"
+content-hash = "3e47b1389d8e4075dea4f203676ecb183ca8a5d698f8f4bedb6b17ae8aae87bf"
