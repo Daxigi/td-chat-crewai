@@ -15,7 +15,12 @@ process_request_task:
        por la información que necesitas. (Ej: "Para ese reporte, ¿podrías darme tu DNI?").
     3. Si el usuario está saludando, o preguntando de forma general qué puedes hacer,
        describe tus capacidades de forma amigable (para esto, usa la herramienta 'list_available_reports').
+  
   expected_output: >
-    Una respuesta útil y directa a la última pregunta del usuario, ya sea el resultado
-    de un reporte, una pregunta para aclarar dudas, o un resumen de tus capacidades.
+    La respuesta COMPLETA y SIN RECORTAR a la pregunta del usuario.
+    Si el resultado es una lista de datos (como un reporte), DEBES incluir
+    TODOS los elementos de la lista, sin importar qué tan larga sea.
+    NO RESUMAS la salida. NO uses frases como "y así sucesivamente".
+    Debes entregar el reporte completo, de principio a fin.
+  
   agent: report_assistant
