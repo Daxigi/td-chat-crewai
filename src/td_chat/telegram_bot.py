@@ -23,6 +23,14 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_message = update.message.text
     print(f"Mensaje recibido de {update.effective_user.full_name}: {user_message}")
 
+    # Lista de saludos comunes
+    greetings = ['hola', 'hi', 'buenos días', 'buenas tardes', 'buenas noches', 'que tal']
+
+    # Comprueba si el mensaje es un saludo
+    if user_message.lower().strip() in greetings:
+        await update.message.reply_text('¡Hola! ¿En qué puedo ayudarte hoy?')
+        return
+
     try:
         # Muestra un mensaje de "escribiendo..."
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=telegram.constants.ChatAction.TYPING)
@@ -33,6 +41,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         # --- CAPA DE SEGURIDAD ---
         # Limpia la respuesta para que sea compatible con Telegram HTML
         # Reemplaza <br> y <br/> por saltos de línea \n
+
         clean_response = str(agent_response).replace('<br>', '\n').replace('<br/>', '\n')
         # Reemplaza los espacios &nbsp; por espacios normales
         clean_response = clean_response.replace('&nbsp;', ' ')
