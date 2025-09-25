@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 import warnings
+import time
 
 from datetime import datetime
 
@@ -24,7 +25,10 @@ def run(user_question: str):
     }
     
     try:
+        start_time = time.time()
         result = TdChat().crew().kickoff(inputs=inputs)
+        end_time = time.time()
+        print(f"\nEl proceso completo ha tardado {end_time - start_time:.2f} segundos.")
         return result
     except Exception as e:
         raise Exception(f"An error occurred while running the crew: {e}")

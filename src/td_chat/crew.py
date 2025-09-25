@@ -2,9 +2,19 @@ from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from typing import List
+import time
 
+task_start_time = None
 # Importamos la función para cargar herramientas desde el servidor MCP
 from src.td_chat.tools.mcp_client import load_tools_from_mcp
+
+# funciones de callback para el inicio y fin de las tareas
+def log_task_start(task_id, task_name):
+    print(f"\n[{time.strftime('%H:%M:%S', time.localtime())}] INFO: Iniciando la tarea: {task_name}...")
+
+def log_task_end(task_id, task_name, result):
+    print(f"\n[{time.strftime('%H:%M:%S', time.localtime())}] INFO: Tarea finalizada: {task_name}. Duración: {time.time() - task_start_time:.2f} segundos.")
+
 
 @CrewBase
 class TdChat():
