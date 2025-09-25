@@ -56,4 +56,4 @@ def run_crew_endpoint(request: CrewRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8765)
+    uvicorn.run(app, host="0.0.0.0", port=8876)
