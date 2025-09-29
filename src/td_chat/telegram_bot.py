@@ -27,20 +27,28 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         # Muestra un mensaje de "escribiendo..."
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=telegram.constants.ChatAction.TYPING)
 
+        # Inicializa el historial de chat si no existe
+        if 'chat_history' not in context.chat_data:
+            context.chat_data['chat_history'] = []
+
+        chat_history_list = context.chat_data['chat_history']
+
         # Ejecuta el agente de CrewAI
-        agent_response = run_crew_agent(user_message)
+        agent_response = run_crew_agent(user_message, "\n".join(chat_history_list))
 
-        # --- CAPA DE SEGURIDAD ---
-        # Limpia la respuesta para que sea compatible con Telegram HTML
-        # Reemplaza <br> y <br/> por saltos de línea \n
-        clean_response = str(agent_response).replace('<br>', '\n').replace('<br/>', '\n')
-        # Reemplaza los espacios &nbsp; por espacios normales
-        clean_response = clean_response.replace('&nbsp;', ' ')
+        # Actualiza el historial de chat
+        chat_history_list.append(f"User: {user_message}")
+        chat_history_list.append(f"Assistant: {agent_response}")
 
-        # Envía la respuesta limpia usando el modo de formato HTML
+        # Mantiene solo los últimos 4 mensajes (2 turnos)
+        if len(chat_history_list) > 4:
+            chat_history_list = chat_history_list[-4:]
+        
+        context.chat_data['chat_history'] = chat_history_list
+
+        # Envía la respuesta en texto plano
         await update.message.reply_text(
-            text=clean_response,
-            parse_mode=telegram.constants.ParseMode.HTML
+            text=str(agent_response)
         )
 
     except Exception as e:
