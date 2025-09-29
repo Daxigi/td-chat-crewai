@@ -2,6 +2,7 @@ from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from langchain_groq import ChatGroq
 import os
+import time
 
 # Asegúrate de que la ruta a tu cliente MCP sea correcta
 from .tools.mcp_client import load_tools_from_mcp
@@ -19,7 +20,11 @@ class TdChatCrew():
             model="groq/llama-3.1-8b-instant"
         )
         # Carga las herramientas desde el servidor MCP
+        print("Cargando herramientas desde MCP...")
+        start_time = time.time()
         self.mcp_tools = load_tools_from_mcp()
+        end_time = time.time()
+        print(f"Herramientas cargadas en {end_time - start_time:.2f} segundos.")
 
     @agent
     def report_assistant(self) -> Agent:
@@ -31,9 +36,19 @@ class TdChatCrew():
 
     @task
     def process_request_task(self) -> Task:
+        def before_execute(): 
+            print(f"--- Ejecutando tarea: {self.tasks_config['process_request_task']['description']} ---")
+            self.start_time = time.time()
+
+        def after_execute(): 
+            end_time = time.time()
+            print(f"--- Tarea finalizada en {end_time - self.start_time:.2f} segundos --- ")
+
         return Task(
             config=self.tasks_config['process_request_task'],
-            agent=self.report_assistant()
+            agent=self.report_assistant(),
+            before_execute_callback=before_execute,
+            after_execute_callback=after_execute
         )
 
     @crew
