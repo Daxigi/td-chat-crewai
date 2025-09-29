@@ -1,4 +1,4 @@
-# Use an official Python runtime as a parent image
+Use an official Python runtime as a parent image
 FROM python:3.12-slim
 
 ENV PYTHONPATH="${PYTHONPATH}:/app/src"
@@ -6,8 +6,13 @@ ENV PYTHONPATH="${PYTHONPATH}:/app/src"
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the requirements file and install dependencies
+# Copy the requirements file
 COPY requirements.txt .
+
+RUN pip install --upgrade pip
+RUN pip install --upgrade "python-telegram-bot[httpx]"
+
+# Instala el resto de las dependencias
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application's code
