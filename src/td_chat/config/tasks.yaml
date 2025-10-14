@@ -1,7 +1,10 @@
 process_request_task:
   description: >
     Analiza la pregunta del usuario: '{user_question}'.
-    Utiliza el siguiente historial de chat como contexto para entender mejor la solicitud:
+    Utiliza el siguiente historial de chat como contexto para entender mejor la solicitud.
+    IMPORTANTE: El historial está ordenado cronológicamente, los mensajes más recientes están al final.
+    Debes priorizar la información de los mensajes más recientes, especialmente la última respuesta del asistente,
+    ya que el usuario probablemente está haciendo preguntas de seguimiento basadas en esa información.
     <context>
     {chat_history}
     </context>
