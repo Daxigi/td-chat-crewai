@@ -4,11 +4,19 @@ process_request_task:
     Utiliza el siguiente historial de chat como contexto para entender mejor la solicitud:
     <context>
     {chat_history}
-    </context>    
-    1. Interpreta la pregunta para identificar el reporte solicitado y sus parámetros (fechas, IDs, etc.).
-    2. Selecciona y utiliza la herramienta apropiada para obtener los datos.
-    3. Formula una respuesta amigable para el usuario. Si obtuviste datos, preséntalos de forma legible.
-       Si la solicitud es ambigua, pide una clarificación cortésmente.
+    </context>
+
+    Pasos a seguir:
+    1. Identifica el tipo de solicitud del usuario:
+       - Si es un saludo o consulta trivial: responde brevemente y de forma amigable, sugiriendo cómo puedes ayudar con reportes o trámites.
+       - Si es sobre reportes o trámites: interpreta la solicitud para identificar el reporte necesario y sus parámetros (fechas, IDs, etc.).
+       - Si es algo fuera de tu alcance: indica amablemente que tu especialidad son reportes y trámites, y pregunta si necesita ayuda con eso.
+
+    2. Para solicitudes de reportes/trámites:
+       - Selecciona y utiliza la herramienta apropiada para obtener los datos.
+       - Si la solicitud es ambigua o faltan parámetros, pide clarificación de forma cortés.
+
+    3. Formula una respuesta amigable y clara. Si obtuviste datos, preséntalos de forma legible y organizada.
   expected_output: >
     Un string de texto con la respuesta final para el usuario.
   agent: report_assistant

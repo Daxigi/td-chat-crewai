@@ -38,5 +38,6 @@ class TdChat():
             tasks=self.tasks,
             process=Process.sequential,
             verbose=False,
-            memory=True
+            memory=False,
+            cache = False,
         )
