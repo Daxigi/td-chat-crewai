@@ -103,11 +103,10 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         chat_history_list.append(f"User: {user_message}")
         chat_history_list.append(f"Assistant: {agent_response}")
 
-        # Mantiene solo los últimos 12 mensajes (6 turnos)
-        # Esto permite mantener contexto de conversaciones con múltiples seguimientos
-        # sin saturar el límite de tokens del LLM
-        if len(chat_history_list) > 12:
-            chat_history_list = chat_history_list[-12:]
+        # Mantiene solo los últimos 4 mensajes (2 turnos)
+        # Esto mantiene un contexto reciente sin saturar el límite de tokens del LLM
+        if len(chat_history_list) > 4:
+            chat_history_list = chat_history_list[-4:]
 
         context.chat_data['chat_history'] = chat_history_list
 

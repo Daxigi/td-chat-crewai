@@ -1,25 +1,20 @@
 process_request_task:
   description: >
-    Analiza la pregunta del usuario: '{user_question}'.
-    Utiliza el siguiente historial de chat como contexto para entender mejor la solicitud.
-    IMPORTANTE: El historial está ordenado cronológicamente, los mensajes más recientes están al final.
-    Debes priorizar la información de los mensajes más recientes, especialmente la última respuesta del asistente,
-    ya que el usuario probablemente está haciendo preguntas de seguimiento basadas en esa información.
+    Procesa la pregunta del usuario: '{user_question}'.
+
+    Contexto de conversación disponible:
     <context>
     {chat_history}
     </context>
 
-    Pasos a seguir:
-    1. Identifica el tipo de solicitud del usuario:
-       - Si es un saludo o consulta trivial: responde brevemente y de forma amigable, sugiriendo cómo puedes ayudar con reportes o trámites.
-       - Si es sobre reportes o trámites: interpreta la solicitud para identificar el reporte necesario y sus parámetros (fechas, IDs, etc.).
-       - Si es algo fuera de tu alcance: indica amablemente que tu especialidad son reportes y trámites, y pregunta si necesita ayuda con eso.
+    IMPORTANTE: El historial está ordenado cronológicamente. Los mensajes más recientes están al final
+    y deben priorizarse, ya que el usuario probablemente está haciendo seguimiento basado en ellos.
 
-    2. Para solicitudes de reportes/trámites:
-       - Selecciona y utiliza la herramienta apropiada para obtener los datos.
-       - Si la solicitud es ambigua o faltan parámetros, pide clarificación de forma cortés.
-
-    3. Formula una respuesta amigable y clara. Si obtuviste datos, preséntalos de forma legible y organizada.
+    Flujo de trabajo:
+    1. Analiza el tipo de solicitud (saludo, consulta de trámite/reporte, o fuera de alcance).
+    2. Si se requiere información adicional o clarificación, solicítala al usuario.
+    3. Ejecuta las herramientas necesarias para obtener los datos requeridos.
+    4. Formula una respuesta clara con los resultados obtenidos.
   expected_output: >
     Un string de texto con la respuesta final para el usuario.
   agent: report_assistant
