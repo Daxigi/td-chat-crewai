@@ -1,24 +1,25 @@
 FROM python:3.12-slim
 
-ENV PYTHONPATH="${PYTHONPATH}:/app/src"
-
-# Set the working directory in the container
+# Configuración básica
 WORKDIR /app
 
-# Copy the requirements file
-COPY requirements.txt .
+# 1. Copiamos los archivos de definición del proyecto
+# Es importante copiar README.md si tu pyproject.toml lo referencia
+COPY pyproject.toml README.md ./
 
-RUN pip install --upgrade pip
-RUN pip install --upgrade "python-telegram-bot[httpx]"
+# 2. Copiamos el código fuente (NECESARIO para que pip instale el paquete)
+COPY src ./src
 
-# Instala el resto de las dependencias
-RUN pip install --no-cache-dir -r requirements.txt
+# 3. Instalamos las dependencias y el propio proyecto
+# Esto lee [project.dependencies] o [tool.poetry.dependencies] y instala todo (incluyendo mem0ai)
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir .
 
-# Copy the rest of the application's code
+# 4. Copiamos el resto de los archivos (como app.py, archivos de config, etc.)
 COPY . .
 
-# Expose the port the app runs on
+# Exponemos el puerto que usas
 EXPOSE 8876
 
-# Run the application
+# Ejecutamos la aplicación
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8876"]
