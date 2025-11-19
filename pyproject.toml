@@ -3,14 +3,15 @@ name = "td_chat"
 version = "0.1.0"
 description = "td-chat using crewAI"
 authors = [{ name = "Your Name", email = "you@example.com" }]
-requires-python = "~3.12"
+requires-python = ">=3.12"
 dependencies = [
     "crewai[tools]>=0.177.0,<1.0.0",
     "fastapi>=0.111.0,<1.0.0",
     "uvicorn[standard]>=0.29.0,<1.0.0",
     "python-dotenv>=1.0.0",
     "mysql-connector-python>=8.0.0",
-    "python-telegram-bot==21.2"
+    "python-telegram-bot==21.2",
+    "mem0ai>=0.1.115",
 ]
 
 [tool.poetry.scripts]
