@@ -93,6 +93,19 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
         chat_history_list = context.chat_data['chat_history']
 
+        # Si es una nueva conversación (historial vacío), enviar mensaje de bienvenida
+        if not chat_history_list:
+            welcome_message = (
+                "¡Hola! Soy tu asistente para trámites municipales. ¿En qué puedo ayudarte? "
+                "Por ejemplo, puedes preguntarme '¿qué preguntas puedes responder?' para ver una lista de trámites y reportes."
+            )
+            await update.message.reply_text(welcome_message)
+            # No procesamos el mensaje del usuario en este turno si es solo para el welcome
+            # El usuario tendrá que enviar su primera pregunta después del welcome.
+            # Alternativamente, si quieres que el bot responda al primer mensaje Y muestre el welcome,
+            # tendrías que modificar esta lógica. Por ahora, solo muestra el welcome.
+            return
+
         # Log para debug
         print(f"Historial actual: {len(chat_history_list)} mensajes")
 

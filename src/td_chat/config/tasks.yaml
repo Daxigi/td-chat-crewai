@@ -11,8 +11,9 @@ process_request_task:
     y deben priorizarse, ya que el usuario probablemente está haciendo seguimiento basado en ellos.
 
     Flujo de trabajo:
-    1. Analiza el tipo de solicitud (saludo, consulta de trámite/reporte, o fuera de alcance).
-    2. Si se requiere información adicional o clarificación, solicítala al usuario.
+    1. Si la pregunta del usuario es "qué preguntas puedes responder?", DEBES usar la herramienta `list_available_reports` para obtener una lista de los trámites y reportes disponibles y presentarla al usuario.
+    2. Analiza el tipo de solicitud (saludo, consulta de trámite/reporte, o fuera de alcance).
+    3. Si se requiere información adicional o clarificación, solicítala al usuario.
     3. Ejecuta las herramientas necesarias para obtener los datos requeridos.
     4. Formula una respuesta clara con los resultados obtenidos.
   expected_output: >
