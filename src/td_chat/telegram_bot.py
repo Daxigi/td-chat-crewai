@@ -100,28 +100,25 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 "Por ejemplo, puedes preguntarme '¿qué preguntas puedes responder?' para ver una lista de trámites y reportes."
             )
             await update.message.reply_text(welcome_message)
-            # No procesamos el mensaje del usuario en este turno si es solo para el welcome
-            # El usuario tendrá que enviar su primera pregunta después del welcome.
-            # Alternativamente, si quieres que el bot responda al primer mensaje Y muestre el welcome,
-            # tendrías que modificar esta lógica. Por ahora, solo muestra el welcome.
-            return
+            # A diferencia de antes, no hacemos 'return'. Dejamos que el primer mensaje se procese.
 
         # Log para debug
-        print(f"Historial actual: {len(chat_history_list)} mensajes")
+        print(f"Historial actual (antes de la ejecución): {len(chat_history_list)} mensajes")
 
         # Ejecuta el agente de CrewAI
-        agent_response = run_crew_agent(user_message, "\n".join(chat_history_list))
+        # El historial se pasa para dar contexto, pero la lógica de Mem0 lo manejará de forma más robusta.
+        agent_response = run_crew_agent(user_message, user_id=str(update.effective_user.id))
 
-        # Actualiza el historial de chat
+        # Actualiza el historial de chat para el próximo turno (lógica simple, Mem0 es principal)
+        # Esto es más para el contexto inmediato dentro de la función `echo`.
         chat_history_list.append(f"User: {user_message}")
         chat_history_list.append(f"Assistant: {agent_response}")
 
-        # Mantiene solo los últimos 4 mensajes (2 turnos)
-        # Esto mantiene un contexto reciente sin saturar el límite de tokens del LLM
+        # Mantiene solo los últimos 4 mensajes (2 turnos) en el contexto de la conversación de telegram
         if len(chat_history_list) > 4:
-            chat_history_list = chat_history_list[-4:]
-
-        context.chat_data['chat_history'] = chat_history_list
+            context.chat_data['chat_history'] = chat_history_list[-4:]
+        else:
+            context.chat_data['chat_history'] = chat_history_list
 
         # Divide el mensaje si es muy largo y envía en múltiples partes
         response_text = str(agent_response)
