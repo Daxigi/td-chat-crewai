@@ -2,14 +2,27 @@
 import sys
 import warnings
 from datetime import datetime
+from typing import Optional
 
 from td_chat.crew import TdChat
 from mem0 import Memory
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
-# Inicializamos Mem0
-m = Memory()
+# La instancia de Mem0 se declara pero no se inicializa.
+m: Optional[Memory] = None
+
+def get_memory_instance() -> Memory:
+    """
+    Inicializa Mem0 de forma perezosa (lazy) en el primer uso.
+    Esto evita problemas de permisos o de red durante el arranque de la app.
+    """
+    global m
+    if m is None:
+        print("🧠 Initializing Mem0 instance for the first time...")
+        m = Memory()
+        print("✅ Mem0 initialized.")
+    return m
 
 def run(user_question: str, user_id: str = "default_user"):
     """
@@ -23,11 +36,14 @@ def run(user_question: str, user_id: str = "default_user"):
         user_id = "usuario_generico"
     # --------------------------------------------
 
-    print(f"🧠 Mem0: Buscando recuerdos para usuario '{user_id}'...")
-
     try:
+        # Obtenemos la instancia de Mem0 de forma segura
+        mem_instance = get_memory_instance()
+
+        print(f"🧠 Mem0: Buscando recuerdos para usuario '{user_id}'...")
+        
         # 1. RECUPERACIÓN: Buscamos contexto previo
-        related_memories = m.search(user_question, user_id=user_id, limit=5)
+        related_memories = mem_instance.search(user_question, user_id=user_id, limit=5)
         
         history_text = ""
         if related_memories:
@@ -60,12 +76,18 @@ def run(user_question: str, user_id: str = "default_user"):
         
         # 4. ALMACENAMIENTO: Guardamos la nueva interacción
         interaction_to_save = f"Usuario preguntó: '{user_question}' -> Asistente respondió: '{str(result)}'"
-        m.add(interaction_to_save, user_id=user_id)
+        mem_instance.add(interaction_to_save, user_id=user_id)
         
         return result
 
     except Exception as e:
-        raise Exception(f"An error occurred while running the crew: {e}")
+        # Imprimir el traceback completo para un mejor diagnóstico
+        import traceback
+        print("--- ERROR EN LA EJECUCIÓN DEL CREW ---")
+        traceback.print_exc()
+        print("------------------------------------")
+        # Devolvemos una excepción para que el bot de telegram pueda notificar al usuario
+        raise Exception(f"Ocurrió un error al procesar la solicitud: {e}")
 
 
 def train():
