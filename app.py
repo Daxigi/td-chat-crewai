@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from td_chat.main import run  # Importa la función run
 from dotenv import load_dotenv
 import time
@@ -9,20 +10,23 @@ from td_chat.telegram_bot import main as run_telegram_bot
 
 load_dotenv()
 
-app = FastAPI()
-
 def start_telegram_bot_in_thread():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     run_telegram_bot()
 
-@app.on_event("startup")
-async def startup_event():
-    # Run the Telegram bot in a separate thread
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Run the Telegram bot in a separate thread
     telegram_thread = threading.Thread(target=start_telegram_bot_in_thread)
-    telegram_thread.daemon = True  # Allow the main program to exit even if the thread is still running
+    telegram_thread.daemon = True  # Allow main program to exit
     telegram_thread.start()
     print("Telegram bot started in a separate thread.")
+    yield
+    # Shutdown: can be used to clean up resources
+    print("Application shutting down.")
+
+app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 def read_root():

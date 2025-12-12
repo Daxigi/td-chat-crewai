@@ -20,7 +20,7 @@ class TdChat():
         return Agent(
             config=self.agents_config['report_assistant'], # type: ignore[index]
             tools=tools,
-            verbose=True,
+            verbose=False,
             allow_delegation=False
         )
 
