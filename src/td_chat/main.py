@@ -2,91 +2,76 @@
 import sys
 import warnings
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from td_chat.crew import TdChat
-from mem0 import Memory
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
-# La instancia de Mem0 se declara pero no se inicializa.
-m: Optional[Memory] = None
-
-def get_memory_instance() -> Memory:
+def run(user_question: str, chat_history: List[str] = None, status_update_func=None):
     """
-    Inicializa Mem0 de forma perezosa (lazy) en el primer uso.
-    Esto evita problemas de permisos o de red durante el arranque de la app.
-    """
-    global m
-    if m is None:
-        print("🧠 Initializing Mem0 instance for the first time...")
-        m = Memory()
-        print("✅ Mem0 initialized.")
-    return m
-
-def run(user_question: str, user_id: str = "default_user"):
-    """
-    Run the crew con memoria inteligente (Mem0).
-    Maneja user_id inválidos y formatos de memoria mixtos (dict/str).
+    Run the crew using session-based context passed from the Telegram bot.
+    :param status_update_func: Async function to send updates to the user (e.g., "Thinking...").
     """
     
-    # --- BLOQUE DE SEGURIDAD: Validar user_id ---
-    if not user_id or not isinstance(user_id, str):
-        print(f"⚠️ Advertencia: user_id inválido recibido ({type(user_id)}). Usando 'usuario_generico'.")
-        user_id = "usuario_generico"
-    # --------------------------------------------
+    # Formatear el historial para el prompt
+    if chat_history:
+        formatted_history = "\n".join(chat_history)
+    else:
+        formatted_history = "No hay contexto previo."
 
+    inputs = {
+        'topic': 'AI LLMs',
+        'current_year': str(datetime.now().year),
+        'user_question': user_question,
+        'chat_history': formatted_history
+    }
+    
     try:
-        # Obtenemos la instancia de Mem0 de forma segura
-        mem_instance = get_memory_instance()
+        # Instanciamos el Crew
+        crew_instance = TdChat()
+        
+        # Si nos pasaron una función de actualización (aunque sea dummy por ahora para probar),
+        # se la asignamos al agente. 
+        # NOTA: CrewAI ejecuta esto en un hilo bloqueante. Pasar funciones async de telegram aquí 
+        # requiere manejo de loops (asyncio.run_coroutine_threadsafe).
+        if status_update_func:
+            # Definimos un wrapper síncrono que el agente pueda llamar
+            def sync_callback(step_output):
+                try:
+                    # Intentar obtener tool y thought ya sea de objeto o dict
+                    if isinstance(step_output, dict):
+                        thought = step_output.get('thought', '')
+                        tool = step_output.get('tool', '')
+                    else:
+                        thought = getattr(step_output, 'thought', '')
+                        tool = getattr(step_output, 'tool', '')
 
-        print(f"🧠 Mem0: Buscando recuerdos para usuario '{user_id}'...")
-        
-        # 1. RECUPERACIÓN: Buscamos contexto previo
-        related_memories = mem_instance.search(user_question, user_id=user_id, limit=5)
-        
-        history_text = ""
-        if related_memories:
-            # --- CORRECCIÓN DEL ERROR 'str object has no attribute get' ---
-            formatted_memories = []
-            for mem in related_memories:
-                if isinstance(mem, dict):
-                    # Si es diccionario, extraemos el campo 'memory' o el texto que tenga
-                    formatted_memories.append(f"- {mem.get('memory', str(mem))}")
-                else:
-                    # Si es string (texto plano), lo usamos directamente
-                    formatted_memories.append(f"- {mem}")
+                    message = ""
+                    if tool and tool != "None":
+                         # Si hay uso de herramienta, es prioritario mostrarlo
+                        message = f"Busco información en: {tool}..."
+                    elif thought:
+                        # Si solo está pensando
+                        message = "Analizando tu consulta..."
+                    
+                    if message:
+                        status_update_func(message)
+                        
+                except Exception as e:
+                    print(f"Error en callback de estado: {e}")
             
-            history_text = "\n".join(formatted_memories)
-            chat_history = f"Contexto recuperado de conversaciones anteriores:\n{history_text}"
-            # --------------------------------------------------------------
-        else:
-            chat_history = "No hay contexto previo relevante para esta consulta."
+            crew_instance.step_callback = sync_callback
 
-        # 2. PREPARACIÓN: Inputs para el Crew
-        inputs = {
-            'topic': 'AI LLMs',
-            'current_year': str(datetime.now().year),
-            'user_question': user_question,
-            'chat_history': chat_history
-        }
-        
-        # 3. EJECUCIÓN: CrewAI
-        result = TdChat().crew().kickoff(inputs=inputs)
-        
-        # 4. ALMACENAMIENTO: Guardamos la nueva interacción
-        interaction_to_save = f"Usuario preguntó: '{user_question}' -> Asistente respondió: '{str(result)}'"
-        mem_instance.add(interaction_to_save, user_id=user_id)
-        
+        # EJECUCIÓN: CrewAI
+        result = crew_instance.crew().kickoff(inputs=inputs)
         return result
 
     except Exception as e:
-        # Imprimir el traceback completo para un mejor diagnóstico
         import traceback
         print("--- ERROR EN LA EJECUCIÓN DEL CREW ---")
         traceback.print_exc()
         print("------------------------------------")
-        # Devolvemos una excepción para que el bot de telegram pueda notificar al usuario
         raise Exception(f"Ocurrió un error al procesar la solicitud: {e}")
 
 

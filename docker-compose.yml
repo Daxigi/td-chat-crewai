@@ -1,17 +1,27 @@
 services:
-  app:
+  telegram-bot: # Cambié el nombre 'app' a algo más descriptivo
     build: .
-    image: td-chat-crewai-app # Le damos un nombre a la imagen
-    container_name: td-chat # ¡Nombre fijo y crucial!
-    ports:
-      - "8765:8876" # Expone el puerto 8765 de tu VPS al 8876 del contenedor
+    image: td-chat-crewai-app
+    container_name: td-chat
+    # Si tu bot es por POLLING, no necesitas exponer puertos hacia afuera.
+    # Solo descomenta 'ports' si usas Webhooks.
+    # ports:
+    #   - "8765:8876" 
     volumes:
       - .:/app
     env_file:
       - .env
-    networks: # ¡Sección añadida!
+    environment:
+      # --- CONEXIÓN CLAVE ---
+      # Aquí le decimos dónde está el servidor MCP.
+      # Asume que tu otro contenedor se llama 'mcp-server' y expone el puerto 8000
+      - MCP_SERVER_URL=http://mcp-server:8000/sse
+      # Asegura que Python no guarde caché .pyc en el volumen montado
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    networks:
       - shared-network
 
-networks: # ¡Sección añadida!
+networks:
   shared-network:
     external: true

@@ -1,30 +1,40 @@
-FROM python:3.12-slim
+# Usamos una imagen base ligera y moderna de Python
+FROM python:3.12-slim-bookworm
 
-# 1. Instalar poetry
-RUN pip install poetry
+# --- INSTALACIÓN DE UV ---
+# Copiamos el binario de uv directamente desde su imagen oficial (Patrón Best Practice)
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
-# 2. Configurar el entorno de Poetry para que no cree entornos virtuales dentro del contenedor
-ENV POETRY_NO_INTERACTION=1 \
-    POETRY_VIRTUALENVS_CREATE=false \
-    POETRY_CACHE_DIR='/var/cache/pypoetry'
+# --- CONFIGURACIÓN DE UV ---
+# 1. Compilar bytecode para arranque más rápido
+# 2. Modo de enlace copia (mejor compatibilidad en Docker)
+# 3. Definimos dónde se creará el entorno virtual (.venv)
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
+ENV UV_PROJECT_ENVIRONMENT="/app/.venv"
 
-# 3. Establecer el directorio de trabajo
 WORKDIR /app
 
-# 4. Copiar solo los archivos de dependencias primero para optimizar el cache de Docker
-COPY pyproject.toml poetry.lock ./
+# --- INSTALACIÓN DE DEPENDENCIAS ---
+# Copiamos primero los archivos de definición para aprovechar el caché de capas de Docker
+COPY pyproject.toml uv.lock ./
 
-# 5. Instalar dependencias usando poetry.lock. Se omiten las de desarrollo.
-RUN poetry install --no-root
+# Instalamos las dependencias.
+# --frozen: Usa exactamente las versiones del uv.lock (seguridad)
+# --no-install-project: No instala tu código todavía, solo librerías
+RUN uv sync --frozen --no-install-project
 
-# 6. Copiar el resto del código de la aplicación
+# --- CÓDIGO DE LA APP ---
 COPY . .
 
+# Agregamos el entorno virtual al PATH para que 'python' sea el del venv
+ENV PATH="/app/.venv/bin:$PATH"
+# Agregamos src al PYTHONPATH por si tienes imports absolutos
 ENV PYTHONPATH="${PYTHONPATH}:/app/src"
 
-# 7. Exponer el puerto correcto
-EXPOSE 8765
+# --- EJECUCIÓN ---
+# Si tu bot usa Polling (lo normal), se ejecuta como script:
+CMD ["python", "src/main.py"]
 
-# 8. Ejecutar la aplicación
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8765"]
-
+# NOTA: Si realmente necesitas Uvicorn (porque usas Webhooks), descomenta la siguiente línea y comenta la anterior:
+# CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8765"]

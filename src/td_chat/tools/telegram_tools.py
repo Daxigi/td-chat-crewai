@@ -19,7 +19,7 @@ class SendMessageTool(BaseTool):
     def _run(self, message: str) -> str:
         """Sends a message to a Telegram chat."""
         try:
-            bot = Bot(token=os.getenv("TELEGRAM_BOT_TOKEN"))
+            bot = Bot(token=os.getenv("TELEGRAM_BOT_TOKEN_AGENTE"))
             bot.send_message(chat_id=os.getenv("TELEGRAM_CHAT_ID"), text=message)
             return "Message sent successfully."
         except Exception as e:

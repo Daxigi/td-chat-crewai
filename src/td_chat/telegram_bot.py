@@ -3,7 +3,7 @@ import asyncio
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from dotenv import load_dotenv
-from src.td_chat.main import run as run_crew_agent
+from td_chat.main import run as run_crew_agent
 import telegram.constants
 from typing import List
 
@@ -11,7 +11,7 @@ from typing import List
 load_dotenv()
 
 # Obtiene el token del bot de las variables de entorno
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_BOT_TOKEN_AGENTE = os.getenv("TELEGRAM_BOT_TOKEN_AGENTE")
 
 # Límite de caracteres por mensaje de Telegram
 MAX_MESSAGE_LENGTH = 4096
@@ -84,7 +84,8 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     print(f"Mensaje recibido de {update.effective_user.full_name}: {user_message}")
 
     try:
-        # Muestra un mensaje de "escribiendo..."
+        # Muestra un mensaje inicial de estado
+        status_message = await update.message.reply_text("⏳ Procesando tu consulta...")
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=telegram.constants.ChatAction.TYPING)
 
         # Inicializa el historial de chat si no existe
@@ -93,24 +94,43 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
         chat_history_list = context.chat_data['chat_history']
 
-        # Si es una nueva conversación (historial vacío), enviar mensaje de bienvenida
-        if not chat_history_list:
-            welcome_message = (
-                "¡Hola! Soy tu asistente para trámites municipales. ¿En qué puedo ayudarte? "
-                "Por ejemplo, puedes preguntarme '¿qué preguntas puedes responder?' para ver una lista de trámites y reportes."
-            )
-            await update.message.reply_text(welcome_message)
-            # A diferencia de antes, no hacemos 'return'. Dejamos que el primer mensaje se procese.
-
         # Log para debug
         print(f"Historial actual (antes de la ejecución): {len(chat_history_list)} mensajes")
 
-        # Ejecuta el agente de CrewAI
-        # El historial se pasa para dar contexto, pero la lógica de Mem0 lo manejará de forma más robusta.
-        agent_response = run_crew_agent(user_message, user_id=str(update.effective_user.id))
+        # Configuración para callbacks asíncronos
+        loop = asyncio.get_running_loop()
+        
+        def on_status_update(message_text):
+            # Callback que se ejecutará desde el hilo del agente
+            async def update_telegram_msg():
+                try:
+                    # Editamos el mensaje de estado con la nueva información
+                    await context.bot.edit_message_text(
+                        chat_id=update.effective_chat.id,
+                        message_id=status_message.message_id,
+                        text=f"⏳ {message_text}"
+                    )
+                except Exception:
+                    # Ignorar errores de edición (ej. si el mensaje no cambió)
+                    pass
+            
+            # Programar la actualización en el loop principal
+            asyncio.run_coroutine_threadsafe(update_telegram_msg(), loop)
 
-        # Actualiza el historial de chat para el próximo turno (lógica simple, Mem0 es principal)
-        # Esto es más para el contexto inmediato dentro de la función `echo`.
+        # Ejecuta el agente de CrewAI en un hilo separado para no bloquear el bot
+        # Pasamos el callback para actualizaciones de estado
+        agent_response = await loop.run_in_executor(
+            None, 
+            lambda: run_crew_agent(user_message, chat_history=chat_history_list, status_update_func=on_status_update)
+        )
+
+        # Eliminar el mensaje de estado
+        try:
+            await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=status_message.message_id)
+        except Exception:
+            pass
+
+        # Actualiza el historial de chat para el próximo turno
         chat_history_list.append(f"User: {user_message}")
         chat_history_list.append(f"Assistant: {agent_response}")
 
@@ -141,11 +161,11 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 def main() -> None:
     """Inicia el bot de Telegram."""
-    if not TELEGRAM_BOT_TOKEN:
-        print("Error: La variable de entorno TELEGRAM_BOT_TOKEN no fue encontrada.")
+    if not TELEGRAM_BOT_TOKEN_AGENTE:
+        print("Error: La variable de entorno TELEGRAM_BOT_TOKEN_AGENTE no fue encontrada.")
         return
 
-    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    application = Application.builder().token(TELEGRAM_BOT_TOKEN_AGENTE).build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("clear", clear_history))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))

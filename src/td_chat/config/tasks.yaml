@@ -13,9 +13,21 @@ process_request_task:
     Flujo de trabajo:
     1. Si la pregunta del usuario es "qué preguntas puedes responder?", DEBES usar la herramienta `list_available_reports` para obtener una lista de los trámites y reportes disponibles y presentarla al usuario.
     2. Analiza el tipo de solicitud (saludo, consulta de trámite/reporte, o fuera de alcance).
-    3. Si se requiere información adicional o clarificación, solicítala al usuario.
+    3. Si se requiere información adicional o clarokificación, solicítala al usuario.
     3. Ejecuta las herramientas necesarias para obtener los datos requeridos.
     4. Formula una respuesta clara con los resultados obtenidos.
   expected_output: >
     Un string de texto con la respuesta final para el usuario.
   agent: report_assistant
+
+inform_task:
+  description: >
+    Responder a la consulta del ciudadano: '{user_question}' utilizando la información disponible en la Guía de Trámites.
+    
+    Contexto previo:
+    {chat_history}
+
+    Usa la herramienta de búsqueda para encontrar los requisitos específicos.
+  expected_output: >
+    Una respuesta amable detallando los requisitos, costos o pasos necesarios para el trámite consultado.
+  agent: municipal_informant

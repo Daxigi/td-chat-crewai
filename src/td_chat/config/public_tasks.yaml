@@ -1,0 +1,15 @@
+inform_task:
+  description: >
+    Responder a la consulta del ciudadano: '{user_question}'.
+    
+    PASOS OBLIGATORIOS:
+    1. Usa la herramienta 'Buscador de Trámites' para obtener el texto oficial.
+    2. Lee el texto recuperado literalmente.
+    3. Construye tu respuesta copiando SOLO los datos (requisitos, costos, plazos) que aparezcan en ese texto recuperado.
+    4. Si el texto recuperado no menciona un dato (ej: horarios), NO lo inventes. Omítelo.
+    
+    Contexto previo:
+    {chat_history}
+  expected_output: >
+    Una lista de requisitos y datos EXACTA al texto recuperado, sin agregados.
+  agent: municipal_informant
